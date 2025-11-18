@@ -1,6 +1,8 @@
 [profile.default]
 name = "BaseCard"
 src = "src"
+test = "test"
+script = "script"
 out = "out"
 libs = ["lib"]
 
