@@ -1,10 +1,13 @@
 [profile.default]
-name = "BaseCard"
 src = "src"
 test = "test"
 script = "script"
 out = "out"
 libs = ["lib"]
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"

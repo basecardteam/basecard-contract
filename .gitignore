@@ -6,9 +6,12 @@ out/
 !/broadcast
 /broadcast/*/84532/
 /broadcast/**/dry-run/
+# local network by anvil
+/broadcast/*/31337/
 
 # Dotenv file
 .env
+.env.*
 .mn
 .password
 

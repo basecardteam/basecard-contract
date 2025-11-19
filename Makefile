@@ -21,6 +21,11 @@ deploy:
 	@forge script script/DeployBaseCard.s.sol --rpc-url $(NETWORK) --broadcast --sender $(ETH_FROM)
 	@echo "✅ Deployment successful!"
 
+deploy-local:
+	@echo "🚀 Deploying contracts to local Anvil network..."
+	@forge script script/DeployMyToken.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --ffi
+
+
 # =============================================================
 #          Read Functions (cast call - 가스비 불필요)
 # =============================================================
