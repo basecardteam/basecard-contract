@@ -25,6 +25,51 @@ deploy-local:
 	@echo "🚀 Deploying contracts to local Anvil network..."
 	@forge script script/DeployMyToken.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --ffi
 
+# =============================================================
+#          Upgrade Functions (UUPS Proxy)
+# =============================================================
+
+## @notice [로컬] 로컬넷에 배포된 프록시에 NFT를 민팅합니다 (테스트용)
+# Usage: make mint-local
+mint-local:
+	@echo "🎨 Minting NFT on local network..."
+	@forge script script/MintToken.s.sol:MintToken --rpc-url http://127.0.0.1:8545 --broadcast -vvvv
+	@echo "✅ Minting complete!"
+
+check-token:	
+	@echo "🔍 Checking token URI..."
+	@cast call $(PROXY_ADDRESS) "tokenURI(uint256)(string)" 0 --rpc-url http://127.0.0.1:8545
+	@cast call $(PROXY_ADDRESS) "balanceOf(address)(uint256)" 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url http://127.0.0.1:8545
+	@echo "✅ Token URI retrieved!"
+
+## @notice [로컬] V1을 V2로 업그레이드하고 상태를 검증합니다
+# Usage: make upgrade-to-v2-local
+upgrade-to-v2-local:
+	@echo "⬆️  Upgrading to V2 on local network..."
+	@forge script script/UpgradeToV2.s.sol:UpgradeToV2 --rpc-url http://127.0.0.1:8545 --broadcast -vvvv
+	@echo "✅ Upgrade complete!"
+
+## @notice [테스트넷] V1을 V2로 업그레이드하고 상태를 검증합니다
+# Usage: make upgrade-to-v2 NETWORK=<network_name>
+# Example: make upgrade-to-v2 NETWORK=base_sepolia
+upgrade-to-v2:
+	@echo "⬆️  Upgrading to V2 on $(NETWORK)..."
+	@forge script script/UpgradeToV2.s.sol:UpgradeToV2 --rpc-url $(NETWORK) --broadcast --verify -vvvv
+	@echo "✅ Upgrade complete!"
+
+## @notice 업그레이드 테스트를 실행합니다
+# Usage: make test-upgrade
+test-upgrade:
+	@echo "🧪 Running upgrade tests..."
+	@forge test --match-contract MyTokenUpgradeTest -vvv
+	@echo "✅ Tests complete!"
+
+
+call-contract-version:
+	@echo "🔍 Calling contract version..."
+	@cast call $(PROXY_ADDRESS) "version()"
+	@echo "✅ Contract version retrieved!"
+
 
 # =============================================================
 #          Read Functions (cast call - 가스비 불필요)

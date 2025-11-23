@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 // V1, V2 컨트랙트 임포트
 import {MyToken} from "../src/contracts/MyToken.sol";
 import {MyTokenV2} from "../src/contracts/MyTokenV2.sol";

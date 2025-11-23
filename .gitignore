@@ -17,3 +17,8 @@ out/
 
 # Personal
 TODO
+
+# docs
+*.md
+!README.md
+!GEMINI.md
