@@ -9,6 +9,9 @@ ast = true
 build_info = true
 extra_output = ["storageLayout"]
 
+# Ignore warnings from dependencies
+ignored_warnings_from = ["lib/"]
+
 [rpc_endpoints]
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 base_mainnet = "${BASE_MAINNET_RPC_URL}"
