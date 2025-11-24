@@ -131,7 +131,7 @@ contract BaseCard is
     //                      내부 스토리지 접근
     // =============================================================
 
-    function _getBaseCardStorage() private pure returns (BaseCardStorage storage $) {
+    function _getBaseCardStorage() internal pure returns (BaseCardStorage storage $) {
         assembly {
             $.slot := BASECARD_STORAGE_LOCATION
         }

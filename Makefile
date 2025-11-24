@@ -64,6 +64,20 @@ test-upgrade:
 	@forge test --match-contract MyTokenUpgradeTest -vvv
 	@echo "✅ Tests complete!"
 
+## @notice BaseCard 기본 테스트 (업그레이드 없음)
+# Usage: make test-basecard
+test-basecard:
+	@echo "🧪 Running BaseCard tests..."
+	@forge clean && forge test --match-contract BaseCardTest --no-match-test Upgrade -vv
+	@echo "✅ Tests complete!"
+
+## @notice BaseCard 업그레이드 테스트
+# Usage: make test-basecard-upgrade
+test-basecard-upgrade:
+	@echo "🧪 Running BaseCard upgrade tests..."
+	@forge clean && forge test --match-contract BaseCardUpgradeTest -vvv
+	@echo "✅ Upgrade tests complete!"
+
 
 call-contract-version:
 	@echo "🔍 Calling contract version..."

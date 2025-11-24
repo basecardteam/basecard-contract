@@ -6,6 +6,8 @@ import {BaseCard} from "../src/contracts/BaseCard.sol";
 import {IBaseCard} from "../src/interfaces/IBaseCard.sol";
 import {Errors} from "../src/types/Errors.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 contract BaseCardTest is Test {
     address public proxy;
@@ -150,9 +152,107 @@ contract BaseCardTest is Test {
         vm.prank(user1);
         baseCard.updateBio(1, "New bio");
 
-        // tokenURI로 확인 (base64 디코딩 필요하지만 여기서는 생략)
+        // tokenURI를 가져와서 파싱
         string memory uri = baseCard.tokenURI(1);
         assertTrue(bytes(uri).length > 0, "Token URI should exist");
+
+        // base64 디코딩 및 JSON 검증
+        _verifyTokenURI(uri, 1, "Alice Updated", "Developer", "New bio", "https://example.com/image.png");
+    }
+
+    function test_TokenURIFormat() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        // NFT 민팅
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png",
+            nickname: "TestUser",
+            role: "Engineer",
+            bio: "Testing tokenURI format"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.prank(user1);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+
+        // TokenURI 가져오기
+        string memory uri = baseCard.tokenURI(1);
+
+        // 1. data:application/json;base64, 프리픽스 확인
+        assertTrue(_startsWith(uri, "data:application/json;base64,"), "URI should start with correct prefix");
+
+        // 2. Base64 디코딩
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        // 3. JSON 파싱 및 검증
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "TestUser", "Nickname mismatch");
+        assertEq(vm.parseJsonString(decodedJson, ".role"), "Engineer", "Role mismatch");
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), "Testing tokenURI format", "Bio mismatch");
+        assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/image.png", "Image URI mismatch");
+
+        // name 필드는 "BaseCard: #1" 형태
+        string memory expectedName = string(abi.encodePacked("BaseCard: #", Strings.toString(1)));
+        assertEq(vm.parseJsonString(decodedJson, ".name"), expectedName, "Name mismatch");
+    }
+
+    // =============================================================
+    //                         헬퍼 함수
+    // =============================================================
+
+    function _verifyTokenURI(
+        string memory uri,
+        uint256 expectedTokenId,
+        string memory expectedNickname,
+        string memory expectedRole,
+        string memory expectedBio,
+        string memory expectedImage
+    ) internal {
+        // Base64 디코딩
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        // JSON 검증
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), expectedNickname);
+        assertEq(vm.parseJsonString(decodedJson, ".role"), expectedRole);
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), expectedBio);
+        assertEq(vm.parseJsonString(decodedJson, ".image"), expectedImage);
+
+        string memory expectedName = string(abi.encodePacked("BaseCard: #", Strings.toString(expectedTokenId)));
+        assertEq(vm.parseJsonString(decodedJson, ".name"), expectedName);
+    }
+
+    function _startsWith(string memory str, string memory prefix) internal pure returns (bool) {
+        bytes memory strBytes = bytes(str);
+        bytes memory prefixBytes = bytes(prefix);
+
+        if (strBytes.length < prefixBytes.length) {
+            return false;
+        }
+
+        for (uint256 i = 0; i < prefixBytes.length; i++) {
+            if (strBytes[i] != prefixBytes[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function _removePrefix(string memory str, string memory prefix) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory prefixBytes = bytes(prefix);
+
+        require(strBytes.length >= prefixBytes.length, "String too short");
+
+        bytes memory result = new bytes(strBytes.length - prefixBytes.length);
+        for (uint256 i = 0; i < result.length; i++) {
+            result[i] = strBytes[i + prefixBytes.length];
+        }
+
+        return string(result);
     }
 
     function test_SetMigrationAdmin() public {
