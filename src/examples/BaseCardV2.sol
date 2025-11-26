@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {BaseCard} from "./BaseCard.sol";
+import {BaseCard} from "../contracts/BaseCard.sol";
 import {Events} from "../types/Events.sol";
 import {Errors} from "../types/Errors.sol";
 

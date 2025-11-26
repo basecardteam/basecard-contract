@@ -7,8 +7,6 @@
 include .env
 export
 
-.PHONY: deploy mint-nft mint-nft-for token-uri link-social update-basename update-bio
-
 # =============================================================
 #          Deploy Contract
 # =============================================================
@@ -16,14 +14,14 @@ export
 # Deploy contracts to a specified network.
 # Usage: make deploy NETWORK=<network_name>
 # Example: make deploy NETWORK=base_sepolia
-deploy:
-	@echo "🚀 Deploying contracts to $(NETWORK)..."
-	@forge script script/DeployBaseCard.s.sol --rpc-url $(NETWORK) --broadcast --sender $(ETH_FROM)
+deploy-testnet:
+	@echo "🚀 Deploying contracts to base_sepolia..."
+	@forge script script/DeployBaseCard.s.sol --rpc-url base_sepolia --broadcast
 	@echo "✅ Deployment successful!"
 
 deploy-local:
 	@echo "🚀 Deploying contracts to local Anvil network..."
-	@forge script script/DeployMyToken.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --ffi
+	@forge script script/DeployBaseCard.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --ffi
 
 # =============================================================
 #          Upgrade Functions (UUPS Proxy)
@@ -56,13 +54,6 @@ upgrade-to-v2:
 	@echo "⬆️  Upgrading to V2 on $(NETWORK)..."
 	@forge script script/UpgradeToV2.s.sol:UpgradeToV2 --rpc-url $(NETWORK) --broadcast --verify -vvvv
 	@echo "✅ Upgrade complete!"
-
-## @notice 업그레이드 테스트를 실행합니다
-# Usage: make test-upgrade
-test-upgrade:
-	@echo "🧪 Running upgrade tests..."
-	@forge test --match-contract MyTokenUpgradeTest -vvv
-	@echo "✅ Tests complete!"
 
 ## @notice BaseCard 기본 테스트 (업그레이드 없음)
 # Usage: make test-basecard

@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 // V1, V2 컨트랙트 임포트
 import {BaseCard} from "../src/contracts/BaseCard.sol";
-import {BaseCardV2} from "../src/contracts/BaseCardV2.sol";
+import {BaseCardV2} from "../src/examples/BaseCardV2.sol";
 import {IBaseCard} from "../src/interfaces/IBaseCard.sol";
 // OpenZeppelin Foundry Upgrades 라이브러리
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
