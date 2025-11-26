@@ -52,7 +52,7 @@ upgrade-to-v2-local:
 # Example: make upgrade-to-v2 NETWORK=base_sepolia
 upgrade-to-v2:
 	@echo "⬆️  Upgrading to V2 on $(NETWORK)..."
-	@forge script script/UpgradeToV2.s.sol:UpgradeToV2 --rpc-url $(NETWORK) --broadcast --verify -vvvv
+	@forge clean && forge script script/UpgradeToV2.s.sol:UpgradeBaseCardToV2 --fork-url base_sepolia --broadcast -vvvv  --account $(DEPLOYER_ACCOUNT) --sender $(DEPLOYER_SENDER)
 	@echo "✅ Upgrade complete!"
 
 ## @notice BaseCard 기본 테스트 (업그레이드 없음)
@@ -73,12 +73,12 @@ test-basecard-upgrade:
 # Usage: make test-fork-upgrade
 test-fork-upgrade:
 	@echo "🧪 Running upgrade simulation on Fork..."
-	@forge test --match-contract BaseCardForkUpgradeTest --fork-url base_sepolia -vvv
+	@forge clean && forge test --match-contract BaseCardForkUpgradeTest --fork-url base_sepolia -vvv
 
 
 call-contract-version:
-	@echo "🔍 Calling contract version..."
-	@cast call $(PROXY_ADDRESS) "version()"
+	@echo "🔍 Calling contract version on $(NETWORK)..."
+	@cast call $(PROXY_ADDRESS) "version()(string)" --rpc-url $(NETWORK)
 	@echo "✅ Contract version retrieved!"
 
 

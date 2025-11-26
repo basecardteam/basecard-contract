@@ -27,7 +27,7 @@ contract UpgradeBaseCardToV2 is Script {
 
         // Safety Check: Default Foundry sender check
         address proxyAddress = vm.envAddress("PROXY_ADDRESS");
-        if (proxyAddress == 0x0000000000000000000000000000000000000000) {
+        if (proxyAddress == address(0)) {
             console.log("Error: proxyAddress is not set.");
             console.log("Please update you .env file to set proxy address for upgrade.");
             revert("Invalid proxy address");
@@ -93,10 +93,13 @@ contract UpgradeBaseCardToV2 is Script {
         // Upgrades.upgradeProxy를 사용하여 V2로 업그레이드
         // - 자동으로 스토리지 레이아웃 호환성 체크 수행
         // - deployerAddress(owner) 권한으로 upgradeToAndCall 실행
+        // V2 초기화 데이터 인코딩
+        bytes memory data = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
+
         Upgrades.upgradeProxy(
             proxyAddress,
             "BaseCardV2.sol",
-            "", // 추가 초기화 데이터 없음
+            data, 
             deployer
         );
         
