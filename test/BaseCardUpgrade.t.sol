@@ -60,7 +60,9 @@ contract BaseCardUpgradeTest is Test {
         // Upgrades 플러그인을 통해 안전하게 업그레이드 실행
         // - 내부적으로 스토리지 레이아웃 호환성 체크 수행
         // - owner 권한으로 upgradeToAndCall 실행
-        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", "", owner);
+        // - initializeV2("v2.0.0") 호출
+        bytes memory upgradeData = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
+        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", upgradeData, owner);
 
         // V2 구현 주소 저장 및 비교
         address implAddressV2 = Upgrades.getImplementationAddress(proxy);
@@ -108,8 +110,9 @@ contract BaseCardUpgradeTest is Test {
         assertEq(baseCardV1.name(), "BaseCard", "V1 name incorrect");
         assertEq(baseCardV1.owner(), owner, "V1 owner incorrect");
 
-        // 데이터 없이 V2로 업그레이드
-        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", "", owner);
+        // 데이터 없이 V2로 업그레이드 (initializeV2 호출)
+        bytes memory upgradeData = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
+        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", upgradeData, owner);
 
         // 구현 주소가 변경되었는지 확인
         address implAddressV2 = Upgrades.getImplementationAddress(proxy);
@@ -141,7 +144,8 @@ contract BaseCardUpgradeTest is Test {
         baseCardV1.mintBaseCard(cardData, socialKeys, socialValues);
 
         // V2로 업그레이드
-        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", "", owner);
+        bytes memory upgradeData = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
+        Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", upgradeData, owner);
 
         BaseCardV2 baseCardV2 = BaseCardV2(proxy);
 

@@ -12,9 +12,31 @@ import {Errors} from "../types/Errors.sol";
  */
 /// @custom:oz-upgrades-from src/contracts/BaseCard.sol:BaseCard
 contract BaseCardV2 is BaseCard {
-    /// @notice V2에서 새로 추가된 로직 - 버전 확인
-    function version() public pure returns (string memory) {
-        return "v2.0.0";
+    /// @custom:storage-location erc7201:basecardteam.BaseCardV2
+    struct BaseCardV2Storage {
+        string _version;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCardV2")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant BASECARD_V2_STORAGE_LOCATION =
+        0x09831a35fdc21c478403edc80897680b73320f23add18d9de313296348e4bb00;
+
+    function _getBaseCardV2Storage() internal pure returns (BaseCardV2Storage storage $) {
+        assembly {
+            $.slot := BASECARD_V2_STORAGE_LOCATION
+        }
+    }
+
+    /// @notice V2 초기화 함수 (reinitializer 사용)
+    function initializeV2(string memory newVersion) public reinitializer(2) {
+        BaseCardV2Storage storage $ = _getBaseCardV2Storage();
+        $._version = newVersion;
+    }
+
+    /// @notice V2에서 새로 추가된 로직 - 버전 확인 (State에서 조회)
+    function version() public view returns (string memory) {
+        BaseCardV2Storage storage $ = _getBaseCardV2Storage();
+        return $._version;
     }
 
     /// @notice V2에서 새로 추가된 기능 - 배치 소셜 링크 업데이트
