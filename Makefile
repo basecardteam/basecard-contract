@@ -69,6 +69,12 @@ test-basecard-upgrade:
 	@forge clean && forge test --match-contract BaseCardUpgradeTest -vvv
 	@echo "✅ Upgrade tests complete!"
 
+## @notice [Fork] 실제 배포된 컨트랙트를 기준으로 업그레이드 시뮬레이션
+# Usage: make test-fork-upgrade
+test-fork-upgrade:
+	@echo "🧪 Running upgrade simulation on Fork..."
+	@forge test --match-contract BaseCardForkUpgradeTest --fork-url base_sepolia -vvv
+
 
 call-contract-version:
 	@echo "🔍 Calling contract version..."

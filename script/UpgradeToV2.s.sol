@@ -56,7 +56,7 @@ contract UpgradeBaseCardToV2 is Script {
         console.log("V1 Owner:", v1Owner);
         
         // 기존에 민팅된 카드가 있다면 확인
-        try baseCardV1.balanceOf(deployerAddress) returns (uint256 balance) {
+        try baseCardV1.balanceOf(deployer) returns (uint256 balance) {
             console.log("Deployer Balance:", balance);
             if (balance > 0) {
                 // 첫 번째 카드 정보 확인 (tokenId = 1, BaseCard는 1부터 시작)
@@ -80,7 +80,7 @@ contract UpgradeBaseCardToV2 is Script {
         } catch {}
 
         // 민팅 여부 확인
-        bool hasMinted = baseCardV1.hasMinted(deployerAddress);
+        bool hasMinted = baseCardV1.hasMinted(deployer);
         console.log("Deployer Has Minted:", hasMinted);
         
         console.log("");
@@ -88,7 +88,7 @@ contract UpgradeBaseCardToV2 is Script {
         // --- [Step 2] V2로 업그레이드 실행 ---
         console.log("[Step 2] Upgrading to V2...");
         
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
         
         // Upgrades.upgradeProxy를 사용하여 V2로 업그레이드
         // - 자동으로 스토리지 레이아웃 호환성 체크 수행
@@ -97,7 +97,7 @@ contract UpgradeBaseCardToV2 is Script {
             proxyAddress,
             "BaseCardV2.sol",
             "", // 추가 초기화 데이터 없음
-            deployerAddress
+            deployer
         );
         
         vm.stopBroadcast();
@@ -131,7 +131,7 @@ contract UpgradeBaseCardToV2 is Script {
         console.log("  - Preserved:", baseCardV2.owner() == v1Owner);
 
         // 민팅 상태 보존 확인
-        bool v2HasMinted = baseCardV2.hasMinted(deployerAddress);
+        bool v2HasMinted = baseCardV2.hasMinted(deployer);
         console.log("V2 Has Minted:", v2HasMinted);
         console.log("  - Preserved:", v2HasMinted == hasMinted);
         
@@ -141,7 +141,7 @@ contract UpgradeBaseCardToV2 is Script {
         console.log("Version:", baseCardV2.version());
 
         // V2의 새로운 함수들이 작동하는지 확인
-        try baseCardV2.balanceOf(deployerAddress) returns (uint256 balance) {
+        try baseCardV2.balanceOf(deployer) returns (uint256 balance) {
             if (balance > 0) {
                 try baseCardV2.getRole(1) returns (string memory role) {
                     console.log("Token #1 Role:", role);
