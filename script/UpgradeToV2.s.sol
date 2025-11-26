@@ -16,19 +16,28 @@ contract UpgradeBaseCardToV2 is Script {
     function setUp() public {}
 
     function run() public {
-        // 배포자 개인키 가져오기
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
+        address deployer = msg.sender;
 
-        // 기존에 배포된 프록시 주소 가져오기
-        // 환경변수에서 읽거나, 직접 입력
+        // Safety Check: Default Foundry sender check
+        if (deployer == 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38) {
+            console.log("Error: Deployer is the default Foundry sender (0x1804...).");
+            console.log("Please use --sender <address> to specify the deployer.");
+            revert("Invalid deployer address");
+        }
+
+        // Safety Check: Default Foundry sender check
         address proxyAddress = vm.envAddress("PROXY_ADDRESS");
-
+        if (proxyAddress == 0x0000000000000000000000000000000000000000) {
+            console.log("Error: proxyAddress is not set.");
+            console.log("Please update you .env file to set proxy address for upgrade.");
+            revert("Invalid proxy address");
+        }
+    
         console.log("============================================================");
         console.log("Upgrading BaseCard V1 -> V2");
         console.log("============================================================");
         console.log("Proxy Address:", proxyAddress);
-        console.log("Deployer Address:", deployerAddress);
+        console.log("Deployer Address:", deployer);
         console.log("");
 
         // --- [Step 1] V1 상태 확인 ---

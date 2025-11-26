@@ -157,7 +157,7 @@ contract BaseCardTest is Test {
         assertTrue(bytes(uri).length > 0, "Token URI should exist");
 
         // base64 디코딩 및 JSON 검증
-        _verifyTokenURI(uri, 1, "Alice Updated", "Developer", "New bio", "https://example.com/image.png");
+        _verifyTokenUri(uri, 1, "Alice Updated", "Developer", "New bio", "https://example.com/image.png");
     }
 
     function test_TokenURIFormat() public {
@@ -202,14 +202,14 @@ contract BaseCardTest is Test {
     //                         헬퍼 함수
     // =============================================================
 
-    function _verifyTokenURI(
+    function _verifyTokenUri(
         string memory uri,
         uint256 expectedTokenId,
         string memory expectedNickname,
         string memory expectedRole,
         string memory expectedBio,
         string memory expectedImage
-    ) internal {
+    ) internal pure {
         // Base64 디코딩
         string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
         string memory decodedJson = string(Base64.decode(base64Data));

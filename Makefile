@@ -16,7 +16,7 @@ export
 # Example: make deploy NETWORK=base_sepolia
 deploy-testnet:
 	@echo "🚀 Deploying contracts to base_sepolia..."
-	@forge script script/DeployBaseCard.s.sol --rpc-url base_sepolia --broadcast
+	@forge script script/DeployBaseCard.s.sol --rpc-url base_sepolia --broadcast --ffi --account $(DEPLOYER_ACCOUNT) --sender $(DEPLOYER_SENDER)
 	@echo "✅ Deployment successful!"
 
 deploy-local:
