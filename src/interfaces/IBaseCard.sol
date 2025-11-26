@@ -35,8 +35,8 @@ interface IBaseCard {
     function mintBaseCard(CardData memory _initialCardData, string[] memory _socialKeys, string[] memory _socialValues)
         external;
 
-    /// @notice [MODIFIED] Adds or updates an allowed social link and rewards ONCE per key.
-    /// @notice [KR] [NFT 소유자 전용] 허용된 소셜 링크를 추가/업데이트하고, 키당 한 번만 보상합니다.
+    /// @notice [MODIFIED] Adds or updates an allowed social link.
+    /// @notice [KR] [NFT 소유자 전용] 허용된 소셜 링크를 추가/업데이트합니다.
     function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external;
 
     /// @notice [EN] [NFT Owner Only] Update default card information.

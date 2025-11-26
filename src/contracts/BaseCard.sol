@@ -240,7 +240,7 @@ contract BaseCard is
     }
 
     /// @inheritdoc IBaseCard
-    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) public onlyTokenOwner(_tokenId) {
+    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external onlyTokenOwner(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
         if (!$._allowedSocialKeys[_key]) {
@@ -291,6 +291,29 @@ contract BaseCard is
 
         CardData memory cardData = $._cardData[_tokenId];
 
+        // 1. 소셜 링크 JSON 배열 생성
+        string memory socialsJson = "[";
+        string[6] memory keys = ["x", "farcaster", "website", "github", "linkedin", "basename"];
+        bool first = true;
+
+        for (uint256 i = 0; i < keys.length; i++) {
+            string memory key = keys[i];
+            string memory value = $._socials[_tokenId][key];
+            
+            if (bytes(value).length > 0) {
+                if (!first) {
+                    socialsJson = string.concat(socialsJson, ",");
+                }
+                socialsJson = string.concat(
+                    socialsJson, 
+                    '{"key":"', key, '","value":"', value, '"}'
+                );
+                first = false;
+            }
+        }
+        socialsJson = string.concat(socialsJson, "]");
+
+        // 2. 전체 메타데이터 JSON 생성
         string memory json = string(
             abi.encodePacked(
                 '{"name": "BaseCard: #',
@@ -307,7 +330,10 @@ contract BaseCard is
                 '",',
                 '"bio": "',
                 cardData.bio,
-                '"}'
+                '",',
+                '"socials": ',
+                socialsJson,
+                '}'
             )
         );
 

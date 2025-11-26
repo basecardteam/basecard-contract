@@ -35,10 +35,6 @@ library Errors {
     /// @notice [KR] 소셜 키와 값 배열의 길이가 일치하지 않을 때 발생하는 에러입니다.
     error MismatchedSocialKeysAndValues();
 
-    /// @notice [EN] Thrown when migration data arrays have mismatched lengths.
-    /// @notice [KR] 마이그레이션 데이터 배열의 길이가 일치하지 않을 때 발생합니다.
-    error MigrationDataMismatch();
-
     /// @notice [EN] Thrown when the migration admin or address is zero.
     /// @notice [KR] 마이그레이션 관리자 또는 주소가 0일 때 발생합니다.
     error AddressZero();
