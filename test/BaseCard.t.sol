@@ -271,6 +271,49 @@ contract BaseCardTest is Test {
         // 실제 값 검증은 별도 테스트에서 수행
     }
 
+    function test_DynamicSocialKeys() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        // 1. 새로운 소셜 키 추가 (예: "discord")
+        vm.prank(owner);
+        baseCard.setAllowedSocialKey("discord", true);
+
+        // 2. NFT 민팅 및 새 키 연결
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png", nickname: "Bob", role: "Gamer", bio: "Play"
+        });
+
+        string[] memory socialKeys = new string[](1);
+        socialKeys[0] = "discord";
+
+        string[] memory socialValues = new string[](1);
+        socialValues[0] = "bob#1234";
+
+        vm.prank(user1);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+
+        // 3. tokenURI 확인
+        string memory uri = baseCard.tokenURI(1);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        console.log("Decoded JSON with Dynamic Key:", decodedJson);
+
+        // 4. JSON 파싱하여 discord 키 확인
+        // socials 배열의 마지막 요소일 가능성이 높음 (순서는 보장되지 않지만 구현상 append됨)
+        // 여기서는 배열을 순회하거나 특정 인덱스를 찍어서 확인해야 함.
+        // 하지만 vm.parseJsonString으로 배열 검색이 까다로울 수 있으므로,
+        // 문자열 포함 여부로 간단히 검증하거나, 정확한 path를 유추
+        
+        // 기존 6개 + 1개 추가 = 총 7개 키 중 값이 있는 것만 나옴.
+        // 여기서는 discord만 값이 있으므로 socials[0]이어야 함.
+        string memory discordKey = vm.parseJsonString(decodedJson, ".socials[0].key");
+        string memory discordValue = vm.parseJsonString(decodedJson, ".socials[0].value");
+
+        assertEq(discordKey, "discord");
+        assertEq(discordValue, "bob#1234");
+    }
+
     function _startsWith(string memory str, string memory prefix) internal pure returns (bool) {
         bytes memory strBytes = bytes(str);
         bytes memory prefixBytes = bytes(prefix);

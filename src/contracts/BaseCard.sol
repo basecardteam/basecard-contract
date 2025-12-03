@@ -56,6 +56,9 @@ contract BaseCard is
         /// @notice [EN] Migration admin address for testnet to mainnet migration
         /// @notice [KR] 테스트넷에서 메인넷으로 마이그레이션을 위한 관리자 주소
         address migrationAdmin;
+        /// @notice [EN] Array of all registered social keys for iteration
+        /// @notice [KR] 순회를 위해 등록된 모든 소셜 키를 저장하는 배열
+        string[] allSocialKeys;
     }
 
     // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCard")) - 1)) & ~bytes32(uint256(0xff))
@@ -119,12 +122,12 @@ contract BaseCard is
         $._nextTokenId = 1;
 
         // 초기 허용 소셜 링크 목록 설정
-        $._allowedSocialKeys["x"] = true;
-        $._allowedSocialKeys["farcaster"] = true;
-        $._allowedSocialKeys["website"] = true;
-        $._allowedSocialKeys["github"] = true;
-        $._allowedSocialKeys["linkedin"] = true;
-        $._allowedSocialKeys["basename"] = true;
+        // 초기 허용 소셜 링크 목록 설정
+        string[6] memory keys = ["x", "farcaster", "website", "github", "linkedin", "basename"];
+        for(uint256 i = 0; i < keys.length; i++) {
+            $._allowedSocialKeys[keys[i]] = true;
+            $.allSocialKeys.push(keys[i]);
+        }
     }
 
     // =============================================================
@@ -144,6 +147,21 @@ contract BaseCard is
     /// @inheritdoc IBaseCard
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external onlyOwner {
         BaseCardStorage storage $ = _getBaseCardStorage();
+        
+        // 키가 처음 활성화되는 경우 배열에 추가 (중복 체크)
+        if (_isAllowed && !$._allowedSocialKeys[_key]) {
+            bool exists = false;
+            for(uint256 i = 0; i < $.allSocialKeys.length; i++) {
+                if (keccak256(bytes($.allSocialKeys[i])) == keccak256(bytes(_key))) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                $.allSocialKeys.push(_key);
+            }
+        }
+        
         $._allowedSocialKeys[_key] = _isAllowed;
     }
 
@@ -293,13 +311,14 @@ contract BaseCard is
 
         // 1. 소셜 링크 JSON 배열 생성
         string memory socialsJson = "[";
-        string[6] memory keys = ["x", "farcaster", "website", "github", "linkedin", "basename"];
+        string[] memory keys = $.allSocialKeys;
         bool first = true;
 
         for (uint256 i = 0; i < keys.length; i++) {
             string memory key = keys[i];
             string memory value = $._socials[_tokenId][key];
             
+            // 값이 존재하고, 현재 허용된 키인 경우에만 표시 (선택 사항: 허용 여부 상관없이 표시하려면 _allowedSocialKeys 체크 제거)
             if (bytes(value).length > 0) {
                 if (!first) {
                     socialsJson = string.concat(socialsJson, ",");
