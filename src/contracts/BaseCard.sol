@@ -123,7 +123,7 @@ contract BaseCard is
 
         // 초기 허용 소셜 링크 목록 설정
         // 초기 허용 소셜 링크 목록 설정
-        string[6] memory keys = ["x", "farcaster", "website", "github", "linkedin", "basename"];
+        string[6] memory keys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
         for(uint256 i = 0; i < keys.length; i++) {
             $._allowedSocialKeys[keys[i]] = true;
             $.allSocialKeys.push(keys[i]);
