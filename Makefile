@@ -95,7 +95,7 @@ token-uri:
 	fi
 	@TOKEN_ID=$${TOKEN_ID:-$(filter-out $@,$(MAKECMDGOALS))}; \
 	echo "🔍 Getting tokenURI for Token ID $$TOKEN_ID on $(NETWORK)..."; \
-	RESULT=$$(cast call $(BASE_CARD_ADDRESS) "tokenURI(uint256)(string)" $$TOKEN_ID --rpc-url "$(NETWORK)"); \
+	RESULT=$$(cast call $(BASECARD_CONTRACT_ADDRESS) "tokenURI(uint256)(string)" $$TOKEN_ID --rpc-url "$(NETWORK)"); \
 	echo "$$RESULT" |  tr -d '"' | sed 's/data:application\/json;base64,//' | base64 -d | jq . ; \
 	echo "✅ Token URI retrieved!"
 
@@ -103,14 +103,14 @@ token-uri:
 # Usage: make get-social TOKEN_ID=<id> KEY=<social_key>
 get-social:
 	@echo "🔍 Getting social value for key $(KEY) on Token ID $(TOKEN_ID)..."
-	@cast call $(BASE_CARD_ADDRESS) "getSocial(uint256,string)(string)" $(TOKEN_ID) "$(KEY)" \
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "getSocial(uint256,string)(string)" $(TOKEN_ID) "$(KEY)" \
 		--rpc-url "$(NETWORK)"
 
 ## @notice [조회] 특정 소셜 키가 허용되었는지 확인합니다.
 # Usage: make is-allowed-social-key KEY=<social_key>
 is-allowed-social-key:
 	@echo "🔍 Checking if social key '$(KEY)' is allowed..."
-	@cast call $(BASE_CARD_ADDRESS) "isAllowedSocialKey(string)(bool)" "$(KEY)" \
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "isAllowedSocialKey(string)(bool)" "$(KEY)" \
 		--rpc-url "$(NETWORK)"
 
 ## @notice [조회] 특정 주소가 이미 민팅했는지 확인합니다.
@@ -118,19 +118,19 @@ is-allowed-social-key:
 check-has-minted:
 	@ADDRESS=$(filter-out $@,$(MAKECMDGOALS)); \
 	echo "🔍 Checking mint status for $$ADDRESS..."; \
-	cast call $(BASE_CARD_ADDRESS) "hasMinted(address)(bool)" $$ADDRESS --rpc-url "$(NETWORK)"
+	cast call $(BASECARD_CONTRACT_ADDRESS) "hasMinted(address)(bool)" $$ADDRESS --rpc-url "$(NETWORK)"
 
 ## @notice [조회] CARD 토큰의 Decimals를 가져옵니다.
 # Usage: make get-token-decimals
 get-token-decimals:
 	@echo "🔍 Getting CARD token decimals..."
-	@cast call $(BASE_CARD_ADDRESS) "tokenDecimals()(uint8)" --rpc-url "$(NETWORK)"
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "tokenDecimals()(uint8)" --rpc-url "$(NETWORK)"
 
 ## @notice [쓰기] NFT에 소셜 링크를 연결합니다.
 # Usage: make link-social TOKEN_ID=<id> KEY=<social_key> VALUE=<social_value>
 link-social:
 	@echo "🔗 Linking social account for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASE_CARD_ADDRESS) "linkSocial(uint256,string,string)" $(TOKEN_ID) "$(KEY)" "$(VALUE)" \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "linkSocial(uint256,string,string)" $(TOKEN_ID) "$(KEY)" "$(VALUE)" \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Social account linked!"
 
@@ -138,7 +138,7 @@ link-social:
 # Usage: make update-nickname TOKEN_ID=<id> NICKNAME=<new_nickname>
 update-nickname:
 	@echo "✏️ Updating nickname for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASE_CARD_ADDRESS) "updateNickname(uint256,string)" $(TOKEN_ID) "$(NICKNAME)" \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateNickname(uint256,string)" $(TOKEN_ID) "$(NICKNAME)" \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Nickname updated!"
 
@@ -146,7 +146,7 @@ update-nickname:
 # Usage: make update-bio TOKEN_ID=<id> BIO=<new_bio>
 update-bio:
 	@echo "✏️ Updating bio for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASE_CARD_ADDRESS) "updateBio(uint256,string)" $(TOKEN_ID) "$(BIO)" \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateBio(uint256,string)" $(TOKEN_ID) "$(BIO)" \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Bio updated!"
 
@@ -154,7 +154,7 @@ update-bio:
 # Usage: make update-image-uri TOKEN_ID=<id> IMAGE_URI=<new_image_uri>
 update-image-uri:
 	@echo "✏️ Updating image URI for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASE_CARD_ADDRESS) "updateImageURI(uint256,string)" $(TOKEN_ID) "$(IMAGE_URI)" \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateImageURI(uint256,string)" $(TOKEN_ID) "$(IMAGE_URI)" \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Image URI updated!"
 
@@ -162,7 +162,7 @@ update-image-uri:
 # Usage: make update-basename TOKEN_ID=<id> BASENAME=<new_basename>
 update-basename:
 	@echo "✏️ Updating basename for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASE_CARD_ADDRESS) "updateBasename(uint256,string)" $(TOKEN_ID) "$(BASENAME)" \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateBasename(uint256,string)" $(TOKEN_ID) "$(BASENAME)" \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Basename updated!"
 
@@ -175,9 +175,22 @@ update-basename:
 # Usage: make set-allowed-social-key KEY=<key> IS_ALLOWED=<true_or_false>
 set-allowed-social-key:
 	@echo "🔑 Setting allowed social key: $(KEY) to $(IS_ALLOWED)..."
-	@cast send $(BASE_CARD_ADDRESS) "setAllowedSocialKey(string,bool)" "$(KEY)" $(IS_ALLOWED) \
+	@cast send $(BASECARD_CONTRACT_ADDRESS) "setAllowedSocialKey(string,bool)" "$(KEY)" $(IS_ALLOWED) \
 	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
 	@echo "✅ Key status updated!"
+
+## @notice [관리자] 마이그레이션 관리자 주소를 설정합니다.
+# Usage: make set-migration-admin ADMIN=<admin_address>
+set-migration-admin:
+	@if [ -z "$(ADMIN)" ]; then \
+		echo "⚠️  ADMIN not specified. Using DEPLOYER_SENDER: $(DEPLOYER_SENDER)"; \
+		ADMIN=$(DEPLOYER_SENDER); \
+	else \
+		ADMIN=$(ADMIN); \
+	fi; \
+	echo "🔑 Setting migration admin to: $$ADMIN..."; \
+	cast send $(BASECARD_CONTRACT_ADDRESS) "setMigrationAdmin(address)" $$ADMIN --rpc-url "$(NETWORK)" --account $(DEPLOYER_ACCOUNT)
+	@echo "✅ Migration admin updated!"
 
 # wallet list
 wallet-list:
