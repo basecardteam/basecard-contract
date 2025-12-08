@@ -59,6 +59,9 @@ contract BaseCard is
         /// @notice [EN] Array of all registered social keys for iteration
         /// @notice [KR] 순회를 위해 등록된 모든 소셜 키를 저장하는 배열
         string[] allSocialKeys;
+        /// @notice [EN] Mapping from owner address to tokenId (0 if not minted)
+        /// @notice [KR] 소유자 주소에서 tokenId로의 매핑 (민팅 안 됨은 0)
+        mapping(address => uint256) ownerToTokenId;
     }
 
     // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCard")) - 1)) & ~bytes32(uint256(0xff))
@@ -197,6 +200,7 @@ contract BaseCard is
         uint256 tokenId = $._nextTokenId++;
         $._cardData[tokenId] = _initialCardData;
         _safeMint(msg.sender, tokenId);
+        $.ownerToTokenId[msg.sender] = tokenId;
 
         // 민팅 시점에 소셜 링크를 설정
         for (uint256 i = 0; i < _socialKeys.length; i++) {
@@ -239,6 +243,7 @@ contract BaseCard is
         uint256 tokenId = $._nextTokenId++;
         $._cardData[tokenId] = _initialCardData;
         _safeMint(_recipient, tokenId);
+        $.ownerToTokenId[_recipient] = tokenId;
 
         // 마이그레이션 시점에 소셜 링크를 설정
         for (uint256 i = 0; i < _socialKeys.length; i++) {
@@ -375,6 +380,12 @@ contract BaseCard is
     function hasMinted(address _address) external view returns (bool) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         return $.hasMinted[_address];
+    }
+
+    /// @inheritdoc IBaseCard
+    function tokenIdOf(address _owner) external view returns (uint256) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        return $.ownerToTokenId[_owner];
     }
 
     /// @notice [EN] Returns the migration admin address.

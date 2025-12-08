@@ -75,4 +75,8 @@ interface IBaseCard {
     /// @notice [EN] Checks if an address has already minted a BaseCard.
     /// @notice [KR] 주소가 이미 BaseCard를 민팅했는지 확인합니다.
     function hasMinted(address _address) external view returns (bool);
+
+    /// @notice [EN] Returns the tokenId owned by the given address (0 if not minted).
+    /// @notice [KR] 주어진 주소가 소유한 tokenId를 반환합니다 (민팅하지 않은 경우 0).
+    function tokenIdOf(address _owner) external view returns (uint256);
 }

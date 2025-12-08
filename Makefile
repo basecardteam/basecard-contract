@@ -19,6 +19,23 @@ deploy-testnet:
 	@forge script script/DeployBaseCard.s.sol --rpc-url base_sepolia --broadcast --ffi --account $(DEPLOYER_ACCOUNT) --sender $(DEPLOYER_SENDER)
 	@echo "✅ Deployment successful!"
 
+## @notice 테스트넷에 배포하고 자동으로 ABI와 주소를 동기화합니다.
+# Usage: make deploy-and-sync
+deploy-and-sync:
+	@echo "🚀 Deploying contracts to base_sepolia..."
+	@forge script script/DeployBaseCard.s.sol --rpc-url base_sepolia --broadcast --ffi --account $(DEPLOYER_ACCOUNT) --sender $(DEPLOYER_SENDER)
+	@echo "✅ Deployment successful!"
+	@echo ""
+	@echo "📦 Extracting proxy address from broadcast..."
+	@PROXY_ADDR=$$(cat broadcast/DeployBaseCard.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "ERC1967Proxy") | .contractAddress'); \
+	if [ -z "$$PROXY_ADDR" ]; then \
+		echo "❌ Could not find proxy address in broadcast"; \
+		exit 1; \
+	fi; \
+	echo "🔗 Proxy Address: $$PROXY_ADDR"; \
+	echo ""; \
+	$(MAKE) sync-all ADDRESS=$$PROXY_ADDR
+
 deploy-local:
 	@echo "🚀 Deploying contracts to local Anvil network..."
 	@forge script script/DeployBaseCard.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --ffi
@@ -201,6 +218,54 @@ wallet-import:
 	@echo "🔑 Importing deployer wallet..."
 	@cast wallet import deployer --mnemonic .mn
 	@echo "✅ Deployer wallet imported!"
+
+# =============================================================
+#          Development Sync Commands
+# =============================================================
+
+## @notice ABI를 miniapp으로 복사합니다.
+# Usage: make sync-abi
+sync-abi:
+	@echo "📦 Syncing ABI to miniapp..."
+	@cp out/BaseCard.sol/BaseCard.json ../miniapp/lib/abi/BaseCard.json
+	@echo "✅ ABI synced to miniapp/lib/abi/BaseCard.json"
+
+## @notice 컨트랙트 주소를 backend와 miniapp에 업데이트합니다.
+# Usage: make update-contract-address ADDRESS=0x...
+update-contract-address:
+	@if [ -z "$(ADDRESS)" ]; then \
+		echo "❌ Error: ADDRESS is required. Usage: make update-contract-address ADDRESS=0x..."; \
+		exit 1; \
+	fi
+	@echo "🔄 Updating contract address to $(ADDRESS)..."
+	@# Update backend/.env
+	@if [ -f "../backend/.env" ]; then \
+		if grep -q "^BASECARD_CONTRACT_ADDRESS=" ../backend/.env; then \
+			sed -i '' 's|^BASECARD_CONTRACT_ADDRESS=.*|BASECARD_CONTRACT_ADDRESS=$(ADDRESS)|' ../backend/.env; \
+		else \
+			echo "BASECARD_CONTRACT_ADDRESS=$(ADDRESS)" >> ../backend/.env; \
+		fi; \
+		echo "  ✓ backend/.env updated"; \
+	else \
+		echo "  ⚠️  backend/.env not found"; \
+	fi
+	@# Update miniapp/.env.local
+	@if [ -f "../miniapp/.env.local" ]; then \
+		if grep -q "^NEXT_PUBLIC_BASECARD_CONTRACT_ADDRESS=" ../miniapp/.env.local; then \
+			sed -i '' 's|^NEXT_PUBLIC_BASECARD_CONTRACT_ADDRESS=.*|NEXT_PUBLIC_BASECARD_CONTRACT_ADDRESS=$(ADDRESS)|' ../miniapp/.env.local; \
+		else \
+			echo "NEXT_PUBLIC_BASECARD_CONTRACT_ADDRESS=$(ADDRESS)" >> ../miniapp/.env.local; \
+		fi; \
+		echo "  ✓ miniapp/.env.local updated"; \
+	else \
+		echo "  ⚠️  miniapp/.env.local not found"; \
+	fi
+	@echo "✅ Contract address updated in all environments!"
+
+## @notice ABI 동기화 + 컨트랙트 주소 업데이트를 한번에 수행합니다.
+# Usage: make sync-all ADDRESS=0x...
+sync-all: sync-abi update-contract-address
+	@echo "🎉 All synced! Don't forget to restart your dev servers."
 
 # =============================================================
 #          Positional Arguments Handler
