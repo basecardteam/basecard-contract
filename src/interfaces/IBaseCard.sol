@@ -47,6 +47,19 @@ interface IBaseCard {
 
     function updateImageURI(uint256 _tokenId, string memory _newImageUri) external;
 
+    /// @notice [EN] [NFT Owner Only] Edit all card data and social links in a single transaction.
+    /// @notice [KR] [NFT 소유자 전용] 모든 카드 데이터와 소셜 링크를 한 트랜잭션에서 수정합니다.
+    /// @param _tokenId The ID of the token to edit.
+    /// @param _newCardData The new card data to set.
+    /// @param _socialKeys The keys of social links to update.
+    /// @param _socialValues The values of social links to update.
+    function editBaseCard(
+        uint256 _tokenId,
+        CardData memory _newCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues
+    ) external;
+
     // =============================================================
     //                     테스트넷 마이그레이션 함수
     // =============================================================
@@ -56,15 +69,6 @@ interface IBaseCard {
     function migrateBaseCardFromTestnet(
         address _recipient,
         CardData memory _initialCardData,
-        string[] memory _socialKeys,
-        string[] memory _socialValues
-    ) external;
-
-    /// @notice [EN] Updates the BaseCard data and social links in a single transaction.
-    /// @notice [KR] BaseCard 데이터와 소셜 링크를 단일 트랜잭션으로 업데이트합니다.
-    function editBaseCard(
-        uint256 _tokenId,
-        CardData memory _newCardData,
         string[] memory _socialKeys,
         string[] memory _socialValues
     ) external;

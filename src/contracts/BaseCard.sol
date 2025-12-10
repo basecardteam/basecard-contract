@@ -126,9 +126,8 @@ contract BaseCard is
 
         // 초기 허용 소셜 링크 목록 설정
         // 초기 허용 소셜 링크 목록 설정
-        // 초기 허용 소셜 링크 목록 설정
         string[6] memory keys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
-        for(uint256 i = 0; i < keys.length; i++) {
+        for (uint256 i = 0; i < keys.length; i++) {
             $._allowedSocialKeys[keys[i]] = true;
             $.allSocialKeys.push(keys[i]);
         }
@@ -151,11 +150,11 @@ contract BaseCard is
     /// @inheritdoc IBaseCard
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external onlyOwner {
         BaseCardStorage storage $ = _getBaseCardStorage();
-        
+
         // 키가 처음 활성화되는 경우 배열에 추가 (중복 체크)
         if (_isAllowed && !$._allowedSocialKeys[_key]) {
             bool exists = false;
-            for(uint256 i = 0; i < $.allSocialKeys.length; i++) {
+            for (uint256 i = 0; i < $.allSocialKeys.length; i++) {
                 if (keccak256(bytes($.allSocialKeys[i])) == keccak256(bytes(_key))) {
                     exists = true;
                     break;
@@ -165,7 +164,7 @@ contract BaseCard is
                 $.allSocialKeys.push(_key);
             }
         }
-        
+
         $._allowedSocialKeys[_key] = _isAllowed;
     }
 
@@ -264,35 +263,6 @@ contract BaseCard is
     }
 
     /// @inheritdoc IBaseCard
-    function editBaseCard(
-        uint256 _tokenId,
-        CardData memory _newCardData,
-        string[] memory _socialKeys,
-        string[] memory _socialValues
-    ) external onlyTokenOwner(_tokenId) {
-        BaseCardStorage storage $ = _getBaseCardStorage();
-
-        if (_socialKeys.length != _socialValues.length) {
-            revert Errors.MismatchedSocialKeysAndValues();
-        }
-
-        $._cardData[_tokenId] = _newCardData;
-
-        for (uint256 i = 0; i < _socialKeys.length; i++) {
-            string memory key = _socialKeys[i];
-            string memory value = _socialValues[i];
-
-            if (!$._allowedSocialKeys[key]) {
-                revert Errors.NotAllowedSocialKey(key);
-            }
-
-            $._socials[_tokenId][key] = value;
-
-            emit Events.SocialLinked(_tokenId, key, value);
-        }
-    }
-
-    /// @inheritdoc IBaseCard
     function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external onlyTokenOwner(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
@@ -321,6 +291,39 @@ contract BaseCard is
     function updateImageURI(uint256 _tokenId, string memory _newImageUri) external onlyTokenOwner(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._cardData[_tokenId].imageURI = _newImageUri;
+    }
+
+    /// @inheritdoc IBaseCard
+    function editBaseCard(
+        uint256 _tokenId,
+        CardData memory _newCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues
+    ) external onlyTokenOwner(_tokenId) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+
+        // 키와 값 배열의 길이가 일치하는지 확인
+        if (_socialKeys.length != _socialValues.length) {
+            revert Errors.MismatchedSocialKeysAndValues();
+        }
+
+        // 카드 데이터 업데이트
+        $._cardData[_tokenId] = _newCardData;
+
+        // 소셜 링크 업데이트
+        for (uint256 i = 0; i < _socialKeys.length; i++) {
+            string memory key = _socialKeys[i];
+            string memory value = _socialValues[i];
+
+            if (!$._allowedSocialKeys[key]) {
+                revert Errors.NotAllowedSocialKey(key);
+            }
+
+            $._socials[_tokenId][key] = value;
+            emit Events.SocialLinked(_tokenId, key, value);
+        }
+
+        emit Events.BaseCardEdited(_tokenId);
     }
 
     // =============================================================
@@ -352,16 +355,13 @@ contract BaseCard is
         for (uint256 i = 0; i < keys.length; i++) {
             string memory key = keys[i];
             string memory value = $._socials[_tokenId][key];
-            
+
             // 값이 존재하고, 현재 허용된 키인 경우에만 표시 (선택 사항: 허용 여부 상관없이 표시하려면 _allowedSocialKeys 체크 제거)
             if (bytes(value).length > 0) {
                 if (!first) {
                     socialsJson = string.concat(socialsJson, ",");
                 }
-                socialsJson = string.concat(
-                    socialsJson, 
-                    '{"key":"', key, '","value":"', value, '"}'
-                );
+                socialsJson = string.concat(socialsJson, '{"key":"', key, '","value":"', value, '"}');
                 first = false;
             }
         }
@@ -387,7 +387,7 @@ contract BaseCard is
                 '",',
                 '"socials": ',
                 socialsJson,
-                '}'
+                "}"
             )
         );
 

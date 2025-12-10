@@ -22,4 +22,9 @@ library Events {
     /// @param user The address of the user who minted the card.
     /// @param tokenId The ID of the newly minted token.
     event MintBaseCard(address indexed user, uint256 indexed tokenId);
+
+    /// @notice [EN] Emitted when a user edits their BaseCard.
+    /// @notice [KR] 유저가 자신의 BaseCard를 수정했을 때 발생하는 이벤트입니다.
+    /// @param tokenId The ID of the token that was edited.
+    event BaseCardEdited(uint256 indexed tokenId);
 }
