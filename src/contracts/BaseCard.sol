@@ -126,6 +126,7 @@ contract BaseCard is
 
         // 초기 허용 소셜 링크 목록 설정
         // 초기 허용 소셜 링크 목록 설정
+        // 초기 허용 소셜 링크 목록 설정
         string[6] memory keys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
         for(uint256 i = 0; i < keys.length; i++) {
             $._allowedSocialKeys[keys[i]] = true;
@@ -260,6 +261,35 @@ contract BaseCard is
         }
 
         emit Events.MintBaseCard(_recipient, tokenId);
+    }
+
+    /// @inheritdoc IBaseCard
+    function editBaseCard(
+        uint256 _tokenId,
+        CardData memory _newCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues
+    ) external onlyTokenOwner(_tokenId) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+
+        if (_socialKeys.length != _socialValues.length) {
+            revert Errors.MismatchedSocialKeysAndValues();
+        }
+
+        $._cardData[_tokenId] = _newCardData;
+
+        for (uint256 i = 0; i < _socialKeys.length; i++) {
+            string memory key = _socialKeys[i];
+            string memory value = _socialValues[i];
+
+            if (!$._allowedSocialKeys[key]) {
+                revert Errors.NotAllowedSocialKey(key);
+            }
+
+            $._socials[_tokenId][key] = value;
+
+            emit Events.SocialLinked(_tokenId, key, value);
+        }
     }
 
     /// @inheritdoc IBaseCard

@@ -53,8 +53,8 @@ mint-local:
 
 check-token:	
 	@echo "🔍 Checking token URI..."
-	@cast call $(PROXY_ADDRESS) "tokenURI(uint256)(string)" 0 --rpc-url http://127.0.0.1:8545
-	@cast call $(PROXY_ADDRESS) "balanceOf(address)(uint256)" 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url http://127.0.0.1:8545
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "tokenURI(uint256)(string)" 0 --rpc-url http://127.0.0.1:8545
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "balanceOf(address)(uint256)" 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url http://127.0.0.1:8545
 	@echo "✅ Token URI retrieved!"
 
 ## @notice [로컬] V1을 V2로 업그레이드하고 상태를 검증합니다
@@ -95,7 +95,7 @@ test-fork-upgrade:
 
 call-contract-version:
 	@echo "🔍 Calling contract version on $(NETWORK)..."
-	@cast call $(PROXY_ADDRESS) "version()(string)" --rpc-url $(NETWORK)
+	@cast call $(BASECARD_CONTRACT_ADDRESS) "version()(string)" --rpc-url $(NETWORK)
 	@echo "✅ Contract version retrieved!"
 
 
@@ -142,6 +142,24 @@ check-has-minted:
 get-token-decimals:
 	@echo "🔍 Getting CARD token decimals..."
 	@cast call $(BASECARD_CONTRACT_ADDRESS) "tokenDecimals()(uint8)" --rpc-url "$(NETWORK)"
+
+## @notice [조회] 주소로 토큰 ID와 URI를 가져옵니다.
+# Usage: make get-token-by-address ADDRESS=<user_address>
+get-token-by-address:
+	@ADDRESS=$(filter-out $@,$(MAKECMDGOALS)); \
+	if [ -z "$$ADDRESS" ]; then \
+		echo "❌ Error: ADDRESS is required."; \
+		exit 1; \
+	fi; \
+	echo "🔍 Getting Token ID for address $$ADDRESS..."; \
+	TOKEN_ID=$$(cast call $(BASECARD_CONTRACT_ADDRESS) "tokenIdOf(address)(uint256)" $$ADDRESS --rpc-url "$(NETWORK)"); \
+	if [ "$$TOKEN_ID" = "0" ]; then \
+		echo "❌ No token found for this address."; \
+		exit 1; \
+	fi; \
+	echo "✅ Token ID found: $$TOKEN_ID"; \
+	echo "🔍 Getting tokenURI..."; \
+	$(MAKE) token-uri TOKEN_ID=$$TOKEN_ID
 
 ## @notice [쓰기] NFT에 소셜 링크를 연결합니다.
 # Usage: make link-social TOKEN_ID=<id> KEY=<social_key> VALUE=<social_value>

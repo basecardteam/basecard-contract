@@ -60,6 +60,15 @@ interface IBaseCard {
         string[] memory _socialValues
     ) external;
 
+    /// @notice [EN] Updates the BaseCard data and social links in a single transaction.
+    /// @notice [KR] BaseCard 데이터와 소셜 링크를 단일 트랜잭션으로 업데이트합니다.
+    function editBaseCard(
+        uint256 _tokenId,
+        CardData memory _newCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues
+    ) external;
+
     // =============================================================
     //                           조회 함수
     // =============================================================

@@ -41,7 +41,7 @@ contract BaseCardTest is Test {
 
         // 소셜 링크 준비
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "x";
+        socialKeys[0] = "twitter";
         socialKeys[1] = "github";
 
         string[] memory socialValues = new string[](2);
@@ -57,7 +57,7 @@ contract BaseCardTest is Test {
         assertEq(baseCard.hasMinted(user1), true, "User should have minted");
 
         // 소셜 링크 검증
-        assertEq(baseCard.getSocial(1, "x"), "@alice", "X should be linked");
+        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "X should be linked");
         assertEq(baseCard.getSocial(1, "github"), "alice", "GitHub should be linked");
     }
 
@@ -97,10 +97,10 @@ contract BaseCardTest is Test {
 
         // 민팅 후 소셜 링크 추가
         vm.prank(user1);
-        baseCard.linkSocial(1, "x", "@alice_new");
+        baseCard.linkSocial(1, "twitter", "@alice_new");
 
         // 소셜 링크 검증
-        assertEq(baseCard.getSocial(1, "x"), "@alice_new", "X should be linked");
+        assertEq(baseCard.getSocial(1, "twitter"), "@alice_new", "X should be linked");
     }
 
     function test_UpdateSocialLink() public {
@@ -119,16 +119,16 @@ contract BaseCardTest is Test {
 
         // 첫 번째 링크 추가
         vm.prank(user1);
-        baseCard.linkSocial(1, "x", "@alice");
+        baseCard.linkSocial(1, "twitter", "@alice");
 
-        assertEq(baseCard.getSocial(1, "x"), "@alice", "X should be linked");
+        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "X should be linked");
 
         // 같은 키로 값 업데이트
         vm.prank(user1);
-        baseCard.linkSocial(1, "x", "@alice_updated");
+        baseCard.linkSocial(1, "twitter", "@alice_updated");
 
         // 값이 업데이트되어야 함
-        assertEq(baseCard.getSocial(1, "x"), "@alice_updated", "X value should be updated");
+        assertEq(baseCard.getSocial(1, "twitter"), "@alice_updated", "X value should be updated");
     }
 
     function test_UpdateCardData() public {
@@ -210,7 +210,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "x";
+        socialKeys[0] = "twitter";
         socialKeys[1] = "github";
 
         string[] memory socialValues = new string[](2);
@@ -228,11 +228,11 @@ contract BaseCardTest is Test {
 
         // JSON 파싱하여 socials 확인
         // vm.parseJsonString은 JSON path를 지원함
-        string memory xValue = vm.parseJsonString(decodedJson, ".socials[0].value");
-        string memory xKey = vm.parseJsonString(decodedJson, ".socials[0].key");
+        string memory twitterValue = vm.parseJsonString(decodedJson, ".socials[0].value");
+        string memory twitterKey = vm.parseJsonString(decodedJson, ".socials[0].key");
         
-        assertEq(xKey, "x");
-        assertEq(xValue, "@alice");
+        assertEq(twitterKey, "twitter");
+        assertEq(twitterValue, "@alice");
 
         string memory githubValue = vm.parseJsonString(decodedJson, ".socials[1].value");
         string memory githubKey = vm.parseJsonString(decodedJson, ".socials[1].key");
@@ -372,7 +372,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](1);
-        socialKeys[0] = "x";
+        socialKeys[0] = "twitter";
 
         string[] memory socialValues = new string[](1);
         socialValues[0] = "@testnet_user";
@@ -384,7 +384,7 @@ contract BaseCardTest is Test {
         // 검증
         assertEq(baseCard.balanceOf(testnetUser), 1, "Testnet user should have 1 NFT");
         assertEq(baseCard.hasMinted(testnetUser), true, "Testnet user should have minted");
-        assertEq(baseCard.getSocial(1, "x"), "@testnet_user", "Social link should be set");
+        assertEq(baseCard.getSocial(1, "twitter"), "@testnet_user", "Social link should be set");
     }
 
     function test_OnlyMigrationAdminCanMigrate() public {
