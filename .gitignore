@@ -6,14 +6,20 @@ out/
 !/broadcast
 /broadcast/*/84532/
 /broadcast/**/dry-run/
-
-# Docs
-docs/
+# local network by anvil
+/broadcast/*/31337/
 
 # Dotenv file
 .env
+.env.*
 .mn
 .password
 
 # Personal
 TODO
+
+# docs
+*.md
+!README.md
+!GEMINI.md
+!WORKFLOW.md
