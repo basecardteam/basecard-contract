@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {BaseCard} from "../src/contracts/BaseCard.sol";
 import {IBaseCard} from "../src/interfaces/IBaseCard.sol";
 import {Errors} from "../src/types/Errors.sol";
@@ -45,10 +45,7 @@ contract BaseCardTest is Test {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "Alice",
-            role: "Developer",
-            bio: "Hello World"
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -73,10 +70,7 @@ contract BaseCardTest is Test {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "Alice",
-            role: "Developer",
-            bio: "Hello World"
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -94,10 +88,7 @@ contract BaseCardTest is Test {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "",
-            role: "Developer",
-            bio: "Hello World"
+            imageURI: "https://example.com/image.png", nickname: "", role: "Developer", bio: "Hello World"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -111,12 +102,8 @@ contract BaseCardTest is Test {
     function test_MintBaseCard_RevertsIfEmptyImageURI() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "",
-            nickname: "Alice",
-            role: "Developer",
-            bio: "Hello World"
-        });
+        IBaseCard.CardData memory cardData =
+            IBaseCard.CardData({imageURI: "", nickname: "Alice", role: "Developer", bio: "Hello World"});
 
         string[] memory socialKeys = new string[](0);
         string[] memory socialValues = new string[](0);
@@ -130,10 +117,7 @@ contract BaseCardTest is Test {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "Alice",
-            role: "InvalidRole",
-            bio: "Hello World"
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "InvalidRole", bio: "Hello World"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -153,10 +137,7 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png",
-            nickname: "NewNickname",
-            role: "Designer",
-            bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -188,10 +169,7 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png",
-            nickname: "NewNickname",
-            role: "Designer",
-            bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -209,10 +187,7 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png",
-            nickname: "NewNickname",
-            role: "Designer",
-            bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -228,10 +203,7 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png",
-            nickname: "NewNickname",
-            role: "Designer",
-            bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -430,10 +402,7 @@ contract BaseCardTest is Test {
         baseCard.setAllowedSocialKey("discord", true);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "Bob",
-            role: "Developer",
-            bio: "Play"
+            imageURI: "https://example.com/image.png", nickname: "Bob", role: "Developer", bio: "Play"
         });
 
         string[] memory socialKeys = new string[](1);
@@ -488,10 +457,7 @@ contract BaseCardTest is Test {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "Alice",
-            role: "Developer",
-            bio: "Hi"
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hi"
         });
 
         string[] memory socialKeys = new string[](2);
