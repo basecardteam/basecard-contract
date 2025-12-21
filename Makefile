@@ -137,14 +137,8 @@ check-has-minted:
 	echo "🔍 Checking mint status for $$ADDRESS..."; \
 	cast call $(BASECARD_CONTRACT_ADDRESS) "hasMinted(address)(bool)" $$ADDRESS --rpc-url "$(NETWORK)"
 
-## @notice [조회] CARD 토큰의 Decimals를 가져옵니다.
-# Usage: make get-token-decimals
-get-token-decimals:
-	@echo "🔍 Getting CARD token decimals..."
-	@cast call $(BASECARD_CONTRACT_ADDRESS) "tokenDecimals()(uint8)" --rpc-url "$(NETWORK)"
-
 ## @notice [조회] 주소로 토큰 ID와 URI를 가져옵니다.
-# Usage: make get-token-by-address ADDRESS=<user_address>
+# Usage: make get-token-by-address <user_address>
 get-token-by-address:
 	@ADDRESS=$(filter-out $@,$(MAKECMDGOALS)); \
 	if [ -z "$$ADDRESS" ]; then \
@@ -160,47 +154,6 @@ get-token-by-address:
 	echo "✅ Token ID found: $$TOKEN_ID"; \
 	echo "🔍 Getting tokenURI..."; \
 	$(MAKE) token-uri TOKEN_ID=$$TOKEN_ID
-
-## @notice [쓰기] NFT에 소셜 링크를 연결합니다.
-# Usage: make link-social TOKEN_ID=<id> KEY=<social_key> VALUE=<social_value>
-link-social:
-	@echo "🔗 Linking social account for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASECARD_CONTRACT_ADDRESS) "linkSocial(uint256,string,string)" $(TOKEN_ID) "$(KEY)" "$(VALUE)" \
-	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
-	@echo "✅ Social account linked!"
-
-## @notice [쓰기] NFT의 닉네임을 업데이트합니다.
-# Usage: make update-nickname TOKEN_ID=<id> NICKNAME=<new_nickname>
-update-nickname:
-	@echo "✏️ Updating nickname for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateNickname(uint256,string)" $(TOKEN_ID) "$(NICKNAME)" \
-	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
-	@echo "✅ Nickname updated!"
-
-## @notice [쓰기] NFT의 Bio(자기소개)를 업데이트합니다.
-# Usage: make update-bio TOKEN_ID=<id> BIO=<new_bio>
-update-bio:
-	@echo "✏️ Updating bio for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateBio(uint256,string)" $(TOKEN_ID) "$(BIO)" \
-	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
-	@echo "✅ Bio updated!"
-
-## @notice [쓰기] NFT의 이미지 URI를 업데이트합니다.
-# Usage: make update-image-uri TOKEN_ID=<id> IMAGE_URI=<new_image_uri>
-update-image-uri:
-	@echo "✏️ Updating image URI for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateImageURI(uint256,string)" $(TOKEN_ID) "$(IMAGE_URI)" \
-	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
-	@echo "✅ Image URI updated!"
-
-## @notice [쓰기] NFT의 Basename을 업데이트합니다.
-# Usage: make update-basename TOKEN_ID=<id> BASENAME=<new_basename>
-update-basename:
-	@echo "✏️ Updating basename for Token ID $(TOKEN_ID) on $(NETWORK)..."
-	@cast send $(BASECARD_CONTRACT_ADDRESS) "updateBasename(uint256,string)" $(TOKEN_ID) "$(BASENAME)" \
-	--rpc-url "$(NETWORK)" --private-key $(PRIVATE_KEY)
-	@echo "✅ Basename updated!"
-
 
 # =============================================================
 #          Owner Functions (cast send - PRIVATE_KEY 필요)

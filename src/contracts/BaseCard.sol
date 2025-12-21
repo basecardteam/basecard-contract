@@ -62,6 +62,12 @@ contract BaseCard is
         /// @notice [EN] Mapping from owner address to tokenId (0 if not minted)
         /// @notice [KR] 소유자 주소에서 tokenId로의 매핑 (민팅 안 됨은 0)
         mapping(address => uint256) ownerToTokenId;
+        /// @notice [EN] Whitelist managing the allowed roles
+        /// @notice [KR] 허용된 역할을 관리하는 화이트리스트
+        mapping(string => bool) _allowedRoles;
+        /// @notice [EN] Array of all registered roles for iteration
+        /// @notice [KR] 순회를 위해 등록된 모든 역할을 저장하는 배열
+        string[] allRoles;
     }
 
     // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCard")) - 1)) & ~bytes32(uint256(0xff))
@@ -99,6 +105,29 @@ contract BaseCard is
         }
     }
 
+    /// @notice [EN] Validates CardData fields.
+    /// @notice [KR] CardData 필드를 검증합니다.
+    function _validateCardData(CardData memory _cardData) internal view {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+
+        // nickname: 빈 문자열 불가
+        if (bytes(_cardData.nickname).length == 0) {
+            revert Errors.EmptyNickname();
+        }
+
+        // imageURI: 빈 문자열 불가
+        if (bytes(_cardData.imageURI).length == 0) {
+            revert Errors.EmptyImageURI();
+        }
+
+        // role: 허용된 역할만 가능
+        if (!$._allowedRoles[_cardData.role]) {
+            revert Errors.NotAllowedRole(_cardData.role);
+        }
+
+        // bio: 빈 문자열 허용 (별도 검증 없음)
+    }
+
     // =============================================================
     //                           생성자
     // =============================================================
@@ -125,11 +154,17 @@ contract BaseCard is
         $._nextTokenId = 1;
 
         // 초기 허용 소셜 링크 목록 설정
-        // 초기 허용 소셜 링크 목록 설정
         string[6] memory keys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
         for (uint256 i = 0; i < keys.length; i++) {
             $._allowedSocialKeys[keys[i]] = true;
             $.allSocialKeys.push(keys[i]);
+        }
+
+        // 초기 허용 역할 목록 설정
+        string[6] memory roles = ["Developer", "Designer", "Marketer", "Founder", "BD", "PM"];
+        for (uint256 i = 0; i < roles.length; i++) {
+            $._allowedRoles[roles[i]] = true;
+            $.allRoles.push(roles[i]);
         }
     }
 
@@ -168,6 +203,27 @@ contract BaseCard is
         $._allowedSocialKeys[_key] = _isAllowed;
     }
 
+    /// @inheritdoc IBaseCard
+    function setAllowedRole(string memory _role, bool _isAllowed) external onlyOwner {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+
+        // 역할이 처음 활성화되는 경우 배열에 추가 (중복 체크)
+        if (_isAllowed && !$._allowedRoles[_role]) {
+            bool exists = false;
+            for (uint256 i = 0; i < $.allRoles.length; i++) {
+                if (keccak256(bytes($.allRoles[i])) == keccak256(bytes(_role))) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                $.allRoles.push(_role);
+            }
+        }
+
+        $._allowedRoles[_role] = _isAllowed;
+    }
+
     /// @notice [EN] [Owner Only] Sets the migration admin address.
     /// @notice [KR] [소유자 전용] 마이그레이션 관리자 주소를 설정합니다.
     /// @param _migrationAdmin The address of the migration admin.
@@ -195,6 +251,9 @@ contract BaseCard is
         if (_socialKeys.length != _socialValues.length) {
             revert Errors.MismatchedSocialKeysAndValues();
         }
+
+        // CardData 유효성 검증
+        _validateCardData(_initialCardData);
 
         $.hasMinted[msg.sender] = true;
         uint256 tokenId = $._nextTokenId++;
@@ -238,6 +297,9 @@ contract BaseCard is
         if (_socialKeys.length != _socialValues.length) {
             revert Errors.MismatchedSocialKeysAndValues();
         }
+
+        // CardData 유효성 검증
+        _validateCardData(_initialCardData);
 
         $.hasMinted[_recipient] = true;
         uint256 tokenId = $._nextTokenId++;
@@ -307,6 +369,9 @@ contract BaseCard is
             revert Errors.MismatchedSocialKeysAndValues();
         }
 
+        // CardData 유효성 검증
+        _validateCardData(_newCardData);
+
         // 카드 데이터 업데이트
         $._cardData[_tokenId] = _newCardData;
 
@@ -319,8 +384,14 @@ contract BaseCard is
                 revert Errors.NotAllowedSocialKey(key);
             }
 
-            $._socials[_tokenId][key] = value;
-            emit Events.SocialLinked(_tokenId, key, value);
+            // 빈 문자열이면 삭제, 아니면 업데이트
+            if (bytes(value).length == 0) {
+                delete $._socials[_tokenId][key];
+                emit Events.SocialUnlinked(_tokenId, key);
+            } else {
+                $._socials[_tokenId][key] = value;
+                emit Events.SocialLinked(_tokenId, key, value);
+            }
         }
 
         emit Events.BaseCardEdited(_tokenId);
@@ -404,6 +475,12 @@ contract BaseCard is
     function isAllowedSocialKey(string memory _key) external view returns (bool) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         return $._allowedSocialKeys[_key];
+    }
+
+    /// @inheritdoc IBaseCard
+    function isAllowedRole(string memory _role) external view returns (bool) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        return $._allowedRoles[_role];
     }
 
     /// @inheritdoc IBaseCard

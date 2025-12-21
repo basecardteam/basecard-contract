@@ -38,4 +38,16 @@ library Errors {
     /// @notice [EN] Thrown when the migration admin or address is zero.
     /// @notice [KR] 마이그레이션 관리자 또는 주소가 0일 때 발생합니다.
     error AddressZero();
+
+    /// @notice [EN] Thrown when nickname is empty.
+    /// @notice [KR] 닉네임이 비어있을 때 발생합니다.
+    error EmptyNickname();
+
+    /// @notice [EN] Thrown when imageURI is empty.
+    /// @notice [KR] 이미지 URI가 비어있을 때 발생합니다.
+    error EmptyImageURI();
+
+    /// @notice [EN] Thrown when attempting to set a role that is not allowed.
+    /// @notice [KR] 허용되지 않은 역할을 설정하려고 할 때 발생합니다.
+    error NotAllowedRole(string role);
 }

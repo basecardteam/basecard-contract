@@ -26,6 +26,10 @@ interface IBaseCard {
     /// @notice [KR] [소유자 전용] 소셜 링크 허용 목록을 관리합니다.
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external;
 
+    /// @notice [EN] [Owner Only] Manages the allowed roles whitelist.
+    /// @notice [KR] [소유자 전용] 허용 역할 목록을 관리합니다.
+    function setAllowedRole(string memory _role, bool _isAllowed) external;
+
     // =============================================================
     //                          핵심 로직
     // =============================================================
@@ -84,6 +88,10 @@ interface IBaseCard {
     /// @notice [EN] Checks if a specific social key is allowed.
     /// @notice [KR] 특정 소셜 key가 허용되었는지 확인합니다.
     function isAllowedSocialKey(string memory _key) external view returns (bool);
+
+    /// @notice [EN] Checks if a specific role is allowed.
+    /// @notice [KR] 특정 역할이 허용되었는지 확인합니다.
+    function isAllowedRole(string memory _role) external view returns (bool);
 
     /// @notice [EN] Checks if an address has already minted a BaseCard.
     /// @notice [KR] 주소가 이미 BaseCard를 민팅했는지 확인합니다.

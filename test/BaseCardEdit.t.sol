@@ -36,7 +36,7 @@ contract BaseCardEditTest is Test {
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
             imageURI: "https://example.com/original.png",
             nickname: "OriginalNickname",
-            role: "OriginalRole",
+            role: "Developer",
             bio: "OriginalBio"
         });
 
@@ -61,7 +61,7 @@ contract BaseCardEditTest is Test {
 
         // 새로운 데이터 준비
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "NewRole", bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -81,7 +81,7 @@ contract BaseCardEditTest is Test {
         string memory decodedJson = string(Base64.decode(base64Data));
 
         assertEq(vm.parseJsonString(decodedJson, ".nickname"), "NewNickname", "Nickname should be updated");
-        assertEq(vm.parseJsonString(decodedJson, ".role"), "NewRole", "Role should be updated");
+        assertEq(vm.parseJsonString(decodedJson, ".role"), "Designer", "Role should be updated");
         assertEq(vm.parseJsonString(decodedJson, ".bio"), "NewBio", "Bio should be updated");
         assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/new.png", "Image should be updated");
 
@@ -99,7 +99,7 @@ contract BaseCardEditTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "NewRole", bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -122,7 +122,7 @@ contract BaseCardEditTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "NewRole", bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](0);
@@ -139,7 +139,7 @@ contract BaseCardEditTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "NewRole", bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -158,7 +158,7 @@ contract BaseCardEditTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
-            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "NewRole", bio: "NewBio"
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
         });
 
         string[] memory socialKeys = new string[](1);

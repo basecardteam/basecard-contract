@@ -27,4 +27,10 @@ library Events {
     /// @notice [KR] 유저가 자신의 BaseCard를 수정했을 때 발생하는 이벤트입니다.
     /// @param tokenId The ID of the token that was edited.
     event BaseCardEdited(uint256 indexed tokenId);
+
+    /// @notice [EN] Emitted when a social link is removed.
+    /// @notice [KR] 소셜 링크가 삭제되었을 때 발생하는 이벤트입니다.
+    /// @param tokenId The ID of the token.
+    /// @param key The key of the social media that was unlinked.
+    event SocialUnlinked(uint256 indexed tokenId, string key);
 }
