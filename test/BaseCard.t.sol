@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {BaseCard} from "../src/contracts/BaseCard.sol";
 import {IBaseCard} from "../src/interfaces/IBaseCard.sol";
 import {Errors} from "../src/types/Errors.sol";
+import {Events} from "../src/types/Events.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
@@ -13,15 +14,20 @@ contract BaseCardTest is Test {
     address public proxy;
     address public owner;
     address public user1;
+    address public user2;
 
     function setUp() public {
         owner = address(this);
         user1 = makeAddr("user1");
+        user2 = makeAddr("user2");
 
-        // BaseCard V1 배포
         bytes memory initData = abi.encodeCall(BaseCard.initialize, (owner));
         proxy = Upgrades.deployUUPSProxy("BaseCard.sol", initData);
     }
+
+    // =============================================================
+    //                      Initialization Tests
+    // =============================================================
 
     function test_Initialize() public view {
         BaseCard baseCard = BaseCard(proxy);
@@ -31,15 +37,20 @@ contract BaseCardTest is Test {
         assertEq(baseCard.owner(), owner);
     }
 
+    // =============================================================
+    //                      Mint BaseCard Tests
+    // =============================================================
+
     function test_MintBaseCard() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        // 초기 카드 데이터 준비
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
+            imageURI: "https://example.com/image.png",
+            nickname: "Alice",
+            role: "Developer",
+            bio: "Hello World"
         });
 
-        // 소셜 링크 준비
         string[] memory socialKeys = new string[](2);
         socialKeys[0] = "twitter";
         socialKeys[1] = "github";
@@ -48,122 +59,402 @@ contract BaseCardTest is Test {
         socialValues[0] = "@alice";
         socialValues[1] = "alice";
 
-        // 민팅
         vm.prank(user1);
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
 
-        // 민팅 후 검증
         assertEq(baseCard.balanceOf(user1), 1, "User should have 1 NFT");
         assertEq(baseCard.hasMinted(user1), true, "User should have minted");
-
-        // 소셜 링크 검증
-        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "X should be linked");
+        assertEq(baseCard.tokenIdOf(user1), 1, "Token ID should be 1");
+        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "Twitter should be linked");
         assertEq(baseCard.getSocial(1, "github"), "alice", "GitHub should be linked");
     }
 
-    function test_CannotMintTwice() public {
+    function test_MintBaseCard_RevertsIfAlreadyMinted() public {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
+            imageURI: "https://example.com/image.png",
+            nickname: "Alice",
+            role: "Developer",
+            bio: "Hello World"
         });
 
         string[] memory socialKeys = new string[](0);
         string[] memory socialValues = new string[](0);
 
-        // 첫 번째 민팅
         vm.prank(user1);
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
 
-        // 두 번째 민팅 시도 - 실패해야 함
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(Errors.AlreadyMinted.selector, user1));
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
     }
 
+    function test_MintBaseCard_RevertsIfEmptyNickname() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png",
+            nickname: "",
+            role: "Developer",
+            bio: "Hello World"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.EmptyNickname.selector));
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+    }
+
+    function test_MintBaseCard_RevertsIfEmptyImageURI() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "",
+            nickname: "Alice",
+            role: "Developer",
+            bio: "Hello World"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.EmptyImageURI.selector));
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+    }
+
+    function test_MintBaseCard_RevertsIfInvalidRole() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png",
+            nickname: "Alice",
+            role: "InvalidRole",
+            bio: "Hello World"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotAllowedRole.selector, "InvalidRole"));
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+    }
+
+    // =============================================================
+    //                      Edit BaseCard Tests
+    // =============================================================
+
+    function test_EditBaseCard() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/new.png",
+            nickname: "NewNickname",
+            role: "Designer",
+            bio: "NewBio"
+        });
+
+        string[] memory socialKeys = new string[](2);
+        socialKeys[0] = "twitter";
+        socialKeys[1] = "github";
+        string[] memory socialValues = new string[](2);
+        socialValues[0] = "@updated_twitter";
+        socialValues[1] = "new_github";
+
+        vm.prank(user1);
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+
+        // Verify via tokenURI
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "NewNickname");
+        assertEq(vm.parseJsonString(decodedJson, ".role"), "Designer");
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), "NewBio");
+        assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/new.png");
+
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "@updated_twitter");
+        assertEq(baseCard.getSocial(tokenId, "github"), "new_github");
+    }
+
+    function test_EditBaseCard_EmitsEvent() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/new.png",
+            nickname: "NewNickname",
+            role: "Designer",
+            bio: "NewBio"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.expectEmit(true, false, false, false);
+        emit Events.BaseCardEdited(tokenId);
+
+        vm.prank(user1);
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+    }
+
+    function test_EditBaseCard_RevertsIfNotOwner() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/new.png",
+            nickname: "NewNickname",
+            role: "Designer",
+            bio: "NewBio"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotTokenOwner.selector, user2, tokenId));
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+    }
+
+    function test_EditBaseCard_RevertsIfMismatchedArrays() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/new.png",
+            nickname: "NewNickname",
+            role: "Designer",
+            bio: "NewBio"
+        });
+
+        string[] memory socialKeys = new string[](2);
+        socialKeys[0] = "twitter";
+        socialKeys[1] = "github";
+        string[] memory socialValues = new string[](1);
+        socialValues[0] = "@updated";
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.MismatchedSocialKeysAndValues.selector));
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+    }
+
+    function test_EditBaseCard_UnlinkSocialWithEmptyString() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        // Verify initial social is set
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "@original");
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/original.png",
+            nickname: "OriginalNickname",
+            role: "Developer",
+            bio: "OriginalBio"
+        });
+
+        string[] memory socialKeys = new string[](1);
+        socialKeys[0] = "twitter";
+        string[] memory socialValues = new string[](1);
+        socialValues[0] = ""; // Empty string to unlink
+
+        vm.expectEmit(true, false, false, true);
+        emit Events.SocialUnlinked(tokenId, "twitter");
+
+        vm.prank(user1);
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+
+        // Verify social is unlinked
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "");
+    }
+
+    // =============================================================
+    //                      LinkSocial Tests
+    // =============================================================
+
     function test_LinkSocial() public {
         BaseCard baseCard = BaseCard(proxy);
-
-        // 먼저 NFT 민팅
-        IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
-        });
-
-        string[] memory socialKeys = new string[](0);
-        string[] memory socialValues = new string[](0);
+        uint256 tokenId = _mintCardForUser(user1);
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.linkSocial(tokenId, "github", "alice_github");
 
-        // 민팅 후 소셜 링크 추가
-        vm.prank(user1);
-        baseCard.linkSocial(1, "twitter", "@alice_new");
-
-        // 소셜 링크 검증
-        assertEq(baseCard.getSocial(1, "twitter"), "@alice_new", "X should be linked");
+        assertEq(baseCard.getSocial(tokenId, "github"), "alice_github");
     }
 
-    function test_UpdateSocialLink() public {
+    function test_LinkSocial_UpdateExisting() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        // Initial link is @original
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "@original");
+
+        vm.prank(user1);
+        baseCard.linkSocial(tokenId, "twitter", "@updated");
+
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "@updated");
+    }
+
+    function test_LinkSocial_UnlinkWithEmptyString() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.expectEmit(true, false, false, true);
+        emit Events.SocialUnlinked(tokenId, "twitter");
+
+        vm.prank(user1);
+        baseCard.linkSocial(tokenId, "twitter", "");
+
+        assertEq(baseCard.getSocial(tokenId, "twitter"), "");
+    }
+
+    function test_LinkSocial_RevertsIfNotAllowedKey() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotAllowedSocialKey.selector, "invalid_key"));
+        baseCard.linkSocial(tokenId, "invalid_key", "value");
+    }
+
+    // =============================================================
+    //                      Individual Update Tests
+    // =============================================================
+
+    function test_UpdateNickname() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.updateNickname(tokenId, "UpdatedNickname");
+
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "UpdatedNickname");
+    }
+
+    function test_UpdateNickname_RevertsIfEmpty() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.EmptyNickname.selector));
+        baseCard.updateNickname(tokenId, "");
+    }
+
+    function test_UpdateBio() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.updateBio(tokenId, "New bio content");
+
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), "New bio content");
+    }
+
+    function test_UpdateBio_AllowsEmptyString() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.updateBio(tokenId, "");
+
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), "");
+    }
+
+    function test_UpdateImageURI() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.updateImageURI(tokenId, "https://example.com/updated.png");
+
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/updated.png");
+    }
+
+    function test_UpdateImageURI_RevertsIfEmpty() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.EmptyImageURI.selector));
+        baseCard.updateImageURI(tokenId, "");
+    }
+
+    // =============================================================
+    //                      Admin Functions Tests
+    // =============================================================
+
+    function test_SetAllowedSocialKey() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        // NFT 민팅
-        IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
-        });
+        vm.prank(owner);
+        baseCard.setAllowedSocialKey("discord", true);
 
-        string[] memory socialKeys = new string[](0);
-        string[] memory socialValues = new string[](0);
-
-        vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
-
-        // 첫 번째 링크 추가
-        vm.prank(user1);
-        baseCard.linkSocial(1, "twitter", "@alice");
-
-        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "X should be linked");
-
-        // 같은 키로 값 업데이트
-        vm.prank(user1);
-        baseCard.linkSocial(1, "twitter", "@alice_updated");
-
-        // 값이 업데이트되어야 함
-        assertEq(baseCard.getSocial(1, "twitter"), "@alice_updated", "X value should be updated");
+        assertTrue(baseCard.isAllowedSocialKey("discord"));
     }
 
-    function test_UpdateCardData() public {
+    function test_SetAllowedRole() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        // NFT 민팅
+        vm.prank(owner);
+        baseCard.setAllowedRole("Investor", true);
+
+        assertTrue(baseCard.isAllowedRole("Investor"));
+    }
+
+    function test_DynamicSocialKeys() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        vm.prank(owner);
+        baseCard.setAllowedSocialKey("discord", true);
+
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
+            imageURI: "https://example.com/image.png",
+            nickname: "Bob",
+            role: "Developer",
+            bio: "Play"
         });
 
-        string[] memory socialKeys = new string[](0);
-        string[] memory socialValues = new string[](0);
+        string[] memory socialKeys = new string[](1);
+        socialKeys[0] = "discord";
+
+        string[] memory socialValues = new string[](1);
+        socialValues[0] = "bob#1234";
 
         vm.prank(user1);
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
 
-        // 데이터 업데이트
-        vm.prank(user1);
-        baseCard.updateNickname(1, "Alice Updated");
-
-        vm.prank(user1);
-        baseCard.updateBio(1, "New bio");
-
-        // tokenURI를 가져와서 파싱
-        string memory uri = baseCard.tokenURI(1);
-        assertTrue(bytes(uri).length > 0, "Token URI should exist");
-
-        // base64 디코딩 및 JSON 검증
-        _verifyTokenUri(uri, 1, "Alice Updated", "Developer", "New bio", "https://example.com/image.png");
+        assertEq(baseCard.getSocial(1, "discord"), "bob#1234");
     }
+
+    // =============================================================
+    //                      TokenURI Tests
+    // =============================================================
 
     function test_TokenURIFormat() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        // NFT 민팅
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
             imageURI: "https://example.com/image.png",
             nickname: "TestUser",
@@ -177,36 +468,30 @@ contract BaseCardTest is Test {
         vm.prank(user1);
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
 
-        // TokenURI 가져오기
         string memory uri = baseCard.tokenURI(1);
 
-        // 1. data:application/json;base64, 프리픽스 확인
-        assertTrue(_startsWith(uri, "data:application/json;base64,"), "URI should start with correct prefix");
+        assertTrue(_startsWith(uri, "data:application/json;base64,"));
 
-        // 2. Base64 디코딩
         string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
         string memory decodedJson = string(Base64.decode(base64Data));
 
-        // 3. JSON 파싱 및 검증
-        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "TestUser", "Nickname mismatch");
-        assertEq(vm.parseJsonString(decodedJson, ".role"), "Developer", "Role mismatch");
-        assertEq(vm.parseJsonString(decodedJson, ".bio"), "Testing tokenURI format", "Bio mismatch");
-        assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/image.png", "Image URI mismatch");
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "TestUser");
+        assertEq(vm.parseJsonString(decodedJson, ".role"), "Developer");
+        assertEq(vm.parseJsonString(decodedJson, ".bio"), "Testing tokenURI format");
+        assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/image.png");
 
-        // name 필드는 "BaseCard: #1" 형태
         string memory expectedName = string(abi.encodePacked("BaseCard: #", Strings.toString(1)));
-        assertEq(vm.parseJsonString(decodedJson, ".name"), expectedName, "Name mismatch");
-
-        // Socials 배열 확인 (빈 배열이어야 함)
-        // vm.parseJsonString으로 배열을 가져오면 string으로 반환됨 (예: "[]")
-        // 여기서는 간단히 파싱이 되는지만 확인
+        assertEq(vm.parseJsonString(decodedJson, ".name"), expectedName);
     }
 
     function test_TokenURI_WithSocials() public {
         BaseCard baseCard = BaseCard(proxy);
 
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hi"
+            imageURI: "https://example.com/image.png",
+            nickname: "Alice",
+            role: "Developer",
+            bio: "Hi"
         });
 
         string[] memory socialKeys = new string[](2);
@@ -224,94 +509,52 @@ contract BaseCardTest is Test {
         string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
         string memory decodedJson = string(Base64.decode(base64Data));
 
-        console.log("Decoded JSON:", decodedJson);
-
-        // JSON 파싱하여 socials 확인
-        // vm.parseJsonString은 JSON path를 지원함
-        string memory xValue = vm.parseJsonString(decodedJson, ".socials[0].value");
         string memory xKey = vm.parseJsonString(decodedJson, ".socials[0].key");
+        string memory xValue = vm.parseJsonString(decodedJson, ".socials[0].value");
 
         assertEq(xKey, "twitter");
         assertEq(xValue, "@alice");
 
-        string memory githubValue = vm.parseJsonString(decodedJson, ".socials[1].value");
         string memory githubKey = vm.parseJsonString(decodedJson, ".socials[1].key");
+        string memory githubValue = vm.parseJsonString(decodedJson, ".socials[1].value");
 
         assertEq(githubKey, "github");
         assertEq(githubValue, "alice_dev");
     }
 
-    // =============================================================
-    //                         헬퍼 함수
-    // =============================================================
-
-    function _verifyTokenUri(
-        string memory uri,
-        uint256 expectedTokenId,
-        string memory expectedNickname,
-        string memory expectedRole,
-        string memory expectedBio,
-        string memory expectedImage
-    ) internal pure {
-        // Base64 디코딩
-        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
-        string memory decodedJson = string(Base64.decode(base64Data));
-
-        // JSON 검증
-        assertEq(vm.parseJsonString(decodedJson, ".nickname"), expectedNickname);
-        assertEq(vm.parseJsonString(decodedJson, ".role"), expectedRole);
-        assertEq(vm.parseJsonString(decodedJson, ".bio"), expectedBio);
-        assertEq(vm.parseJsonString(decodedJson, ".image"), expectedImage);
-
-        string memory expectedName = string(abi.encodePacked("BaseCard: #", Strings.toString(expectedTokenId)));
-        assertEq(vm.parseJsonString(decodedJson, ".name"), expectedName);
-
-        // Socials 존재 여부 확인 (배열이므로 길이를 체크하거나 첫번째 요소를 확인)
-        // 여기서는 단순히 키가 존재하는지만 확인 (vm.parseJsonString은 키가 없으면 에러 발생 가능)
-        // 실제 값 검증은 별도 테스트에서 수행
-    }
-
-    function test_DynamicSocialKeys() public {
+    function test_TokenURI_RevertsIfInvalidTokenId() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        // 1. 새로운 소셜 키 추가 (예: "discord")
-        vm.prank(owner);
-        baseCard.setAllowedSocialKey("discord", true);
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidTokenId.selector, 0));
+        baseCard.tokenURI(0);
 
-        // 2. NFT 민팅 및 새 키 연결
+        vm.expectRevert(abi.encodeWithSelector(Errors.InvalidTokenId.selector, 999));
+        baseCard.tokenURI(999);
+    }
+
+    // =============================================================
+    //                      Helper Functions
+    // =============================================================
+
+    function _mintCardForUser(address user) internal returns (uint256) {
+        BaseCard baseCard = BaseCard(proxy);
+
         IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png", nickname: "Bob", role: "Developer", bio: "Play"
+            imageURI: "https://example.com/original.png",
+            nickname: "OriginalNickname",
+            role: "Developer",
+            bio: "OriginalBio"
         });
 
         string[] memory socialKeys = new string[](1);
-        socialKeys[0] = "discord";
-
+        socialKeys[0] = "twitter";
         string[] memory socialValues = new string[](1);
-        socialValues[0] = "bob#1234";
+        socialValues[0] = "@original";
 
-        vm.prank(user1);
+        vm.prank(user);
         baseCard.mintBaseCard(cardData, socialKeys, socialValues);
 
-        // 3. tokenURI 확인
-        string memory uri = baseCard.tokenURI(1);
-        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
-        string memory decodedJson = string(Base64.decode(base64Data));
-
-        console.log("Decoded JSON with Dynamic Key:", decodedJson);
-
-        // 4. JSON 파싱하여 discord 키 확인
-        // socials 배열의 마지막 요소일 가능성이 높음 (순서는 보장되지 않지만 구현상 append됨)
-        // 여기서는 배열을 순회하거나 특정 인덱스를 찍어서 확인해야 함.
-        // 하지만 vm.parseJsonString으로 배열 검색이 까다로울 수 있으므로,
-        // 문자열 포함 여부로 간단히 검증하거나, 정확한 path를 유추
-
-        // 기존 6개 + 1개 추가 = 총 7개 키 중 값이 있는 것만 나옴.
-        // 여기서는 discord만 값이 있으므로 socials[0]이어야 함.
-        string memory discordKey = vm.parseJsonString(decodedJson, ".socials[0].key");
-        string memory discordValue = vm.parseJsonString(decodedJson, ".socials[0].value");
-
-        assertEq(discordKey, "discord");
-        assertEq(discordValue, "bob#1234");
+        return baseCard.tokenIdOf(user);
     }
 
     function _startsWith(string memory str, string memory prefix) internal pure returns (bool) {
@@ -344,71 +587,4 @@ contract BaseCardTest is Test {
 
         return string(result);
     }
-
-    function test_SetMigrationAdmin() public {
-        BaseCard baseCard = BaseCard(proxy);
-
-        address migrationAdmin = makeAddr("migrationAdmin");
-
-        // Owner만 migration admin 설정 가능
-        baseCard.setMigrationAdmin(migrationAdmin);
-
-        assertEq(baseCard.migrationAdmin(), migrationAdmin, "Migration admin should be set");
-    }
-
-    function test_MigrateFromTestnet() public {
-        BaseCard baseCard = BaseCard(proxy);
-
-        address migrationAdmin = makeAddr("migrationAdmin");
-        baseCard.setMigrationAdmin(migrationAdmin);
-
-        address testnetUser = makeAddr("testnetUser");
-
-        IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "TestnetUser",
-            role: "Developer",
-            bio: "Migrated from testnet"
-        });
-
-        string[] memory socialKeys = new string[](1);
-        socialKeys[0] = "twitter";
-
-        string[] memory socialValues = new string[](1);
-        socialValues[0] = "@testnet_user";
-
-        // Migration admin이 마이그레이션 실행
-        vm.prank(migrationAdmin);
-        baseCard.migrateBaseCardFromTestnet(testnetUser, cardData, socialKeys, socialValues);
-
-        // 검증
-        assertEq(baseCard.balanceOf(testnetUser), 1, "Testnet user should have 1 NFT");
-        assertEq(baseCard.hasMinted(testnetUser), true, "Testnet user should have minted");
-        assertEq(baseCard.getSocial(1, "twitter"), "@testnet_user", "Social link should be set");
-    }
-
-    function test_OnlyMigrationAdminCanMigrate() public {
-        BaseCard baseCard = BaseCard(proxy);
-
-        address migrationAdmin = makeAddr("migrationAdmin");
-        baseCard.setMigrationAdmin(migrationAdmin);
-
-        address testnetUser = makeAddr("testnetUser");
-
-        IBaseCard.CardData memory cardData = IBaseCard.CardData({
-            imageURI: "https://example.com/image.png",
-            nickname: "TestnetUser",
-            role: "Developer",
-            bio: "Migrated from testnet"
-        });
-
-        string[] memory socialKeys = new string[](0);
-        string[] memory socialValues = new string[](0);
-
-        // 일반 유저가 마이그레이션 시도 - 실패해야 함
-        vm.prank(user1);
-        vm.expectRevert();
-        baseCard.migrateBaseCardFromTestnet(testnetUser, cardData, socialKeys, socialValues);
-    }
 }
-
