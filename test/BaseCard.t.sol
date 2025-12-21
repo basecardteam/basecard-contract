@@ -205,8 +205,9 @@ contract BaseCardTest is Test {
     function test_TokenURI_WithSocials() public {
         BaseCard baseCard = BaseCard(proxy);
 
-        IBaseCard.CardData memory cardData =
-            IBaseCard.CardData({imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hi"});
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hi"
+        });
 
         string[] memory socialKeys = new string[](2);
         socialKeys[0] = "twitter";

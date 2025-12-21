@@ -9,9 +9,9 @@ import {
 import {
     ERC721BurnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IBaseCard} from "../interfaces/IBaseCard.sol";
@@ -21,10 +21,8 @@ import {Errors} from "../types/Errors.sol";
 /**
  * @title BaseCard
  * @author @jeongseup
- * @notice [EN] This contract manages the minting of 'BaseCard' NFTs.
- *         Users can mint one card per address and link their social media accounts.
- * @notice [KR] 'BaseCard' NFT 민팅을 관리하는 컨트랙트입니다.
- *         유저는 주소당 하나의 카드를 민팅하고, 소셜 미디어 계정을 연결할 수 있습니다.
+ * @notice A soulbound-like NFT representing a user's on-chain business card.
+ *         Each address can mint one card and link their social media accounts.
  * @custom:security-contact seup87@gmail.com
  */
 contract BaseCard is
@@ -47,27 +45,13 @@ contract BaseCard is
         uint256 _nextTokenId;
         mapping(uint256 => CardData) _cardData;
         mapping(address => bool) hasMinted;
-        /// @notice [EN] A double mapping of [TokenID -> [Social Key -> Social Value]].
-        /// @notice [KR] [TokenID -> [소셜 Key -> 소셜 Value]] 형태의 이중 매핑
         mapping(uint256 => mapping(string => string)) _socials;
-        /// @notice [EN] A whitelist managing the keys of social links that can be registered.
-        /// @notice [KR] 등록 가능한 소셜 링크의 key들을 관리하는 허용 목록
         mapping(string => bool) _allowedSocialKeys;
-        /// @notice [EN] Migration admin address for testnet to mainnet migration
-        /// @notice [KR] 테스트넷에서 메인넷으로 마이그레이션을 위한 관리자 주소
-        address migrationAdmin;
-        /// @notice [EN] Array of all registered social keys for iteration
-        /// @notice [KR] 순회를 위해 등록된 모든 소셜 키를 저장하는 배열
         string[] allSocialKeys;
-        /// @notice [EN] Mapping from owner address to tokenId (0 if not minted)
-        /// @notice [KR] 소유자 주소에서 tokenId로의 매핑 (민팅 안 됨은 0)
-        mapping(address => uint256) ownerToTokenId;
-        /// @notice [EN] Whitelist managing the allowed roles
-        /// @notice [KR] 허용된 역할을 관리하는 화이트리스트
         mapping(string => bool) _allowedRoles;
-        /// @notice [EN] Array of all registered roles for iteration
-        /// @notice [KR] 순회를 위해 등록된 모든 역할을 저장하는 배열
         string[] allRoles;
+        mapping(address => uint256) ownerToTokenId;
+        address migrationAdmin;
     }
 
     // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCard")) - 1)) & ~bytes32(uint256(0xff))
@@ -75,61 +59,57 @@ contract BaseCard is
         0x27203bc8d62caad0b56b7f1020c3acf2cd00bb7fa7c320bee6a88ad2dbdc6500;
 
     // =============================================================
-    //                           수식어
+    //                          Modifiers
     // =============================================================
 
     modifier onlyTokenOwner(uint256 _tokenId) {
-        _onlyTokenOwner(_tokenId);
+        _checkTokenOwner(_tokenId);
         _;
     }
 
     modifier onlyMigrationAdmin() {
-        _onlyMigrationAdmin();
+        _checkMigrationAdmin();
         _;
     }
 
     // =============================================================
-    //                    내부 검증 함수 (가스 최적화)
+    //                    Internal Validation
     // =============================================================
 
-    function _onlyTokenOwner(uint256 _tokenId) internal view {
+    function _checkTokenOwner(uint256 _tokenId) internal view {
         if (ownerOf(_tokenId) != msg.sender) {
             revert Errors.NotTokenOwner(msg.sender, _tokenId);
         }
     }
 
-    function _onlyMigrationAdmin() internal view {
+    function _checkMigrationAdmin() internal view {
         BaseCardStorage storage $ = _getBaseCardStorage();
         if (msg.sender != $.migrationAdmin) {
             revert Errors.NotMigrationAdmin(msg.sender);
         }
     }
 
-    /// @notice [EN] Validates CardData fields.
-    /// @notice [KR] CardData 필드를 검증합니다.
+    /// @dev Validates CardData fields.
     function _validateCardData(CardData memory _cardData) internal view {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
-        // nickname: 빈 문자열 불가
         if (bytes(_cardData.nickname).length == 0) {
             revert Errors.EmptyNickname();
         }
 
-        // imageURI: 빈 문자열 불가
         if (bytes(_cardData.imageURI).length == 0) {
             revert Errors.EmptyImageURI();
         }
 
-        // role: 허용된 역할만 가능
         if (!$._allowedRoles[_cardData.role]) {
             revert Errors.NotAllowedRole(_cardData.role);
         }
 
-        // bio: 빈 문자열 허용 (별도 검증 없음)
+        // bio: empty string is allowed
     }
 
     // =============================================================
-    //                           생성자
+    //                         Constructor
     // =============================================================
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -138,11 +118,10 @@ contract BaseCard is
     }
 
     // =============================================================
-    //                         초기화 함수
+    //                        Initialization
     // =============================================================
 
-    /// @notice [EN] Initializes the contract.
-    /// @notice [KR] 컨트랙트를 초기화합니다.
+    /// @notice Initializes the contract.
     /// @param initialOwner The address that will own the contract.
     function initialize(address initialOwner) public initializer {
         __ERC721_init("BaseCard", "BCARD");
@@ -153,23 +132,23 @@ contract BaseCard is
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._nextTokenId = 1;
 
-        // 초기 허용 소셜 링크 목록 설정
-        string[6] memory keys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
-        for (uint256 i = 0; i < keys.length; i++) {
-            $._allowedSocialKeys[keys[i]] = true;
-            $.allSocialKeys.push(keys[i]);
+        // Initialize default social keys
+        string[6] memory defaultKeys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
+        for (uint256 i = 0; i < defaultKeys.length; i++) {
+            $._allowedSocialKeys[defaultKeys[i]] = true;
+            $.allSocialKeys.push(defaultKeys[i]);
         }
 
-        // 초기 허용 역할 목록 설정
-        string[6] memory roles = ["Developer", "Designer", "Marketer", "Founder", "BD", "PM"];
-        for (uint256 i = 0; i < roles.length; i++) {
-            $._allowedRoles[roles[i]] = true;
-            $.allRoles.push(roles[i]);
+        // Initialize default roles
+        string[6] memory defaultRoles = ["Developer", "Designer", "Marketer", "Founder", "BD", "PM"];
+        for (uint256 i = 0; i < defaultRoles.length; i++) {
+            $._allowedRoles[defaultRoles[i]] = true;
+            $.allRoles.push(defaultRoles[i]);
         }
     }
 
     // =============================================================
-    //                      내부 스토리지 접근
+    //                      Storage Access
     // =============================================================
 
     function _getBaseCardStorage() internal pure returns (BaseCardStorage storage $) {
@@ -179,14 +158,14 @@ contract BaseCard is
     }
 
     // =============================================================
-    //                         관리자 함수
+    //                      Admin Functions
     // =============================================================
 
     /// @inheritdoc IBaseCard
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external onlyOwner {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
-        // 키가 처음 활성화되는 경우 배열에 추가 (중복 체크)
+        // Add to array if first time activating (with duplicate check)
         if (_isAllowed && !$._allowedSocialKeys[_key]) {
             bool exists = false;
             for (uint256 i = 0; i < $.allSocialKeys.length; i++) {
@@ -207,7 +186,7 @@ contract BaseCard is
     function setAllowedRole(string memory _role, bool _isAllowed) external onlyOwner {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
-        // 역할이 처음 활성화되는 경우 배열에 추가 (중복 체크)
+        // Add to array if first time activating (with duplicate check)
         if (_isAllowed && !$._allowedRoles[_role]) {
             bool exists = false;
             for (uint256 i = 0; i < $.allRoles.length; i++) {
@@ -224,8 +203,8 @@ contract BaseCard is
         $._allowedRoles[_role] = _isAllowed;
     }
 
-    /// @notice [EN] [Owner Only] Sets the migration admin address.
-    /// @notice [KR] [소유자 전용] 마이그레이션 관리자 주소를 설정합니다.
+    /// @notice Sets the migration admin address.
+    /// @dev Only callable by the contract owner.
     /// @param _migrationAdmin The address of the migration admin.
     function setMigrationAdmin(address _migrationAdmin) external onlyOwner {
         if (_migrationAdmin == address(0)) revert Errors.AddressZero();
@@ -234,7 +213,7 @@ contract BaseCard is
     }
 
     // =============================================================
-    //                          핵심 로직
+    //                      Minting Functions
     // =============================================================
 
     /// @inheritdoc IBaseCard
@@ -247,12 +226,10 @@ contract BaseCard is
             revert Errors.AlreadyMinted(msg.sender);
         }
 
-        // 키와 값 배열의 길이가 일치하는지 확인
         if (_socialKeys.length != _socialValues.length) {
             revert Errors.MismatchedSocialKeysAndValues();
         }
 
-        // CardData 유효성 검증
         _validateCardData(_initialCardData);
 
         $.hasMinted[msg.sender] = true;
@@ -261,7 +238,7 @@ contract BaseCard is
         _safeMint(msg.sender, tokenId);
         $.ownerToTokenId[msg.sender] = tokenId;
 
-        // 민팅 시점에 소셜 링크를 설정
+        // Set social links
         for (uint256 i = 0; i < _socialKeys.length; i++) {
             string memory key = _socialKeys[i];
             string memory value = _socialValues[i];
@@ -271,43 +248,34 @@ contract BaseCard is
             }
 
             $._socials[tokenId][key] = value;
-
             emit Events.SocialLinked(tokenId, key, value);
         }
 
         emit Events.MintBaseCard(msg.sender, tokenId);
     }
 
+    // =============================================================
+    //                      Update Functions
+    // =============================================================
+
     /// @inheritdoc IBaseCard
-    function migrateBaseCardFromTestnet(
-        address _recipient,
-        CardData memory _initialCardData,
+    function editBaseCard(
+        uint256 _tokenId,
+        CardData memory _newCardData,
         string[] memory _socialKeys,
         string[] memory _socialValues
-    ) external onlyMigrationAdmin {
+    ) external onlyTokenOwner(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
-        if (_recipient == address(0)) revert Errors.AddressZero();
-
-        if ($.hasMinted[_recipient]) {
-            revert Errors.AlreadyMinted(_recipient);
-        }
-
-        // 키와 값 배열의 길이가 일치하는지 확인
         if (_socialKeys.length != _socialValues.length) {
             revert Errors.MismatchedSocialKeysAndValues();
         }
 
-        // CardData 유효성 검증
-        _validateCardData(_initialCardData);
+        _validateCardData(_newCardData);
 
-        $.hasMinted[_recipient] = true;
-        uint256 tokenId = $._nextTokenId++;
-        $._cardData[tokenId] = _initialCardData;
-        _safeMint(_recipient, tokenId);
-        $.ownerToTokenId[_recipient] = tokenId;
+        $._cardData[_tokenId] = _newCardData;
 
-        // 마이그레이션 시점에 소셜 링크를 설정
+        // Update social links
         for (uint256 i = 0; i < _socialKeys.length; i++) {
             string memory key = _socialKeys[i];
             string memory value = _socialValues[i];
@@ -316,12 +284,16 @@ contract BaseCard is
                 revert Errors.NotAllowedSocialKey(key);
             }
 
-            $._socials[tokenId][key] = value;
-
-            emit Events.SocialLinked(tokenId, key, value);
+            if (bytes(value).length == 0) {
+                delete $._socials[_tokenId][key];
+                emit Events.SocialUnlinked(_tokenId, key);
+            } else {
+                $._socials[_tokenId][key] = value;
+                emit Events.SocialLinked(_tokenId, key, value);
+            }
         }
 
-        emit Events.MintBaseCard(_recipient, tokenId);
+        emit Events.BaseCardEdited(_tokenId);
     }
 
     /// @inheritdoc IBaseCard
@@ -332,7 +304,6 @@ contract BaseCard is
             revert Errors.NotAllowedSocialKey(_key);
         }
 
-        // 빈 문자열이면 삭제, 아니면 업데이트 (editBaseCard와 동일한 동작)
         if (bytes(_value).length == 0) {
             delete $._socials[_tokenId][_key];
             emit Events.SocialUnlinked(_tokenId, _key);
@@ -366,54 +337,11 @@ contract BaseCard is
         $._cardData[_tokenId].imageURI = _newImageUri;
     }
 
-    /// @inheritdoc IBaseCard
-    function editBaseCard(
-        uint256 _tokenId,
-        CardData memory _newCardData,
-        string[] memory _socialKeys,
-        string[] memory _socialValues
-    ) external onlyTokenOwner(_tokenId) {
-        BaseCardStorage storage $ = _getBaseCardStorage();
-
-        // 키와 값 배열의 길이가 일치하는지 확인
-        if (_socialKeys.length != _socialValues.length) {
-            revert Errors.MismatchedSocialKeysAndValues();
-        }
-
-        // CardData 유효성 검증
-        _validateCardData(_newCardData);
-
-        // 카드 데이터 업데이트
-        $._cardData[_tokenId] = _newCardData;
-
-        // 소셜 링크 업데이트
-        for (uint256 i = 0; i < _socialKeys.length; i++) {
-            string memory key = _socialKeys[i];
-            string memory value = _socialValues[i];
-
-            if (!$._allowedSocialKeys[key]) {
-                revert Errors.NotAllowedSocialKey(key);
-            }
-
-            // 빈 문자열이면 삭제, 아니면 업데이트
-            if (bytes(value).length == 0) {
-                delete $._socials[_tokenId][key];
-                emit Events.SocialUnlinked(_tokenId, key);
-            } else {
-                $._socials[_tokenId][key] = value;
-                emit Events.SocialLinked(_tokenId, key, value);
-            }
-        }
-
-        emit Events.BaseCardEdited(_tokenId);
-    }
-
     // =============================================================
-    //                           조회 함수
+    //                       View Functions
     // =============================================================
 
-    /// @notice [EN] Returns the token URI with metadata encoded in base64.
-    /// @notice [KR] base64로 인코딩된 메타데이터와 함께 토큰 URI를 반환합니다.
+    /// @notice Returns the token URI with on-chain JSON metadata.
     /// @param _tokenId The ID of the token.
     function tokenURI(uint256 _tokenId)
         public
@@ -429,7 +357,7 @@ contract BaseCard is
 
         CardData memory cardData = $._cardData[_tokenId];
 
-        // 1. 소셜 링크 JSON 배열 생성
+        // Build socials JSON array
         string memory socialsJson = "[";
         string[] memory keys = $.allSocialKeys;
         bool first = true;
@@ -438,7 +366,6 @@ contract BaseCard is
             string memory key = keys[i];
             string memory value = $._socials[_tokenId][key];
 
-            // 값이 존재하고, 현재 허용된 키인 경우에만 표시 (선택 사항: 허용 여부 상관없이 표시하려면 _allowedSocialKeys 체크 제거)
             if (bytes(value).length > 0) {
                 if (!first) {
                     socialsJson = string.concat(socialsJson, ",");
@@ -449,7 +376,7 @@ contract BaseCard is
         }
         socialsJson = string.concat(socialsJson, "]");
 
-        // 2. 전체 메타데이터 JSON 생성
+        // Build full metadata JSON
         string memory json = string(
             abi.encodePacked(
                 '{"name": "BaseCard: #',
@@ -506,21 +433,20 @@ contract BaseCard is
         return $.ownerToTokenId[_owner];
     }
 
-    /// @notice [EN] Returns the migration admin address.
-    /// @notice [KR] 마이그레이션 관리자 주소를 반환합니다.
+    /// @notice Returns the migration admin address.
     function migrationAdmin() external view returns (address) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         return $.migrationAdmin;
     }
 
     // =============================================================
-    //                       업그레이드 권한
+    //                     Upgrade Authorization
     // =============================================================
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     // =============================================================
-    //                    필수 오버라이드 함수
+    //                    Required Overrides
     // =============================================================
 
     function supportsInterface(bytes4 interfaceId)
@@ -532,4 +458,3 @@ contract BaseCard is
         return super.supportsInterface(interfaceId);
     }
 }
-

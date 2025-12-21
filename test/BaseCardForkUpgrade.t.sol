@@ -13,7 +13,7 @@ contract BaseCardForkUpgradeTest is Test {
     function setUp() public {
         // 1. .env에서 프록시 주소 로드
         proxy = vm.envAddress("PROXY_ADDRESS");
-        
+
         // 프록시 주소가 설정되지 않았으면 테스트 스킵
         if (proxy == address(0)) {
             console.log("Skipping test: PROXY_ADDRESS not set in .env");
@@ -45,20 +45,20 @@ contract BaseCardForkUpgradeTest is Test {
         console.log("Current Implementation:", implV1);
 
         // --- [Step 2] V2로 업그레이드 시뮬레이션 ---
-        
+
         // V2 초기화 데이터 ("v2.0.0")
         bytes memory upgradeData = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
 
         // 오너로 가장하여 업그레이드 실행 (Impersonate)
         vm.startPrank(owner);
-        
+
         // Upgrades 플러그인을 사용하여 업그레이드 (새 구현체 배포 + upgradeToAndCall)
         Upgrades.upgradeProxy(proxy, "BaseCardV2.sol", upgradeData, owner);
-        
+
         vm.stopPrank();
 
         // --- [Step 3] V2 상태 검증 ---
-        
+
         // 구현 주소 변경 확인
         address implV2 = Upgrades.getImplementationAddress(proxy);
         console.log("New Implementation:", implV2);

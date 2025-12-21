@@ -3,51 +3,51 @@ pragma solidity ^0.8.27;
 
 /**
  * @title Errors
- * @notice Custom error definitions for BaseCard contract
+ * @notice Custom error definitions for the BaseCard contract
  */
 library Errors {
     // =============================================================
-    //                      BaseCard Errors
+    //                       Validation Errors
     // =============================================================
 
-    /// @notice [EN] Thrown when a user who has already minted tries to mint again.
-    /// @notice [KR] 이미 민팅한 유저가 다시 민팅을 시도할 때 발생합니다.
-    error AlreadyMinted(address user);
+    /// @notice Thrown when nickname is empty.
+    error EmptyNickname();
 
-    /// @notice [EN] Thrown when an action is attempted by someone other than the token owner.
-    /// @notice [KR] 토큰 소유자가 아닌 다른 이가 작업을 시도할 때 발생합니다.
-    error NotTokenOwner(address caller, uint256 tokenId);
+    /// @notice Thrown when imageURI is empty.
+    error EmptyImageURI();
 
-    /// @notice [EN] Thrown when attempting to link a social media key that is not allowed.
-    /// @notice [KR] 허용되지 않은 소셜 미디어 키를 연결하려고 할 때 발생합니다.
+    /// @notice Thrown when attempting to set a role that is not allowed.
+    /// @param role The invalid role.
+    error NotAllowedRole(string role);
+
+    /// @notice Thrown when attempting to link a social key that is not allowed.
+    /// @param key The invalid social key.
     error NotAllowedSocialKey(string key);
 
-    /// @notice [EN] Thrown when querying metadata for a non-existent token ID.
-    /// @notice [KR] 존재하지 않는 토큰 ID에 대한 메타데이터를 조회할 때 발생하는 에러입니다.
+    /// @notice Thrown when social keys and values arrays have mismatched lengths.
+    error MismatchedSocialKeysAndValues();
+
+    /// @notice Thrown when querying metadata for a non-existent token ID.
     /// @param tokenId The invalid token ID.
     error InvalidTokenId(uint256 tokenId);
 
-    /// @notice [EN] Thrown when an unauthorized address attempts an admin-only action.
-    /// @notice [KR] 허용되지 않은 주소가 관리자 전용 기능을 호출할 때 발생합니다.
-    error NotMigrationAdmin(address caller);    
-
-    /// @notice [EN] Thrown when social keys and values arrays have mismatched lengths.
-    /// @notice [KR] 소셜 키와 값 배열의 길이가 일치하지 않을 때 발생하는 에러입니다.
-    error MismatchedSocialKeysAndValues();
-
-    /// @notice [EN] Thrown when the migration admin or address is zero.
-    /// @notice [KR] 마이그레이션 관리자 또는 주소가 0일 때 발생합니다.
+    /// @notice Thrown when a zero address is provided.
     error AddressZero();
 
-    /// @notice [EN] Thrown when nickname is empty.
-    /// @notice [KR] 닉네임이 비어있을 때 발생합니다.
-    error EmptyNickname();
+    // =============================================================
+    //                      Authorization Errors
+    // =============================================================
 
-    /// @notice [EN] Thrown when imageURI is empty.
-    /// @notice [KR] 이미지 URI가 비어있을 때 발생합니다.
-    error EmptyImageURI();
+    /// @notice Thrown when a user who has already minted tries to mint again.
+    /// @param user The address that already minted.
+    error AlreadyMinted(address user);
 
-    /// @notice [EN] Thrown when attempting to set a role that is not allowed.
-    /// @notice [KR] 허용되지 않은 역할을 설정하려고 할 때 발생합니다.
-    error NotAllowedRole(string role);
+    /// @notice Thrown when an action is attempted by someone other than the token owner.
+    /// @param caller The unauthorized caller.
+    /// @param tokenId The token ID.
+    error NotTokenOwner(address caller, uint256 tokenId);
+
+    /// @notice Thrown when an unauthorized address attempts a migration-admin-only action.
+    /// @param caller The unauthorized caller.
+    error NotMigrationAdmin(address caller);
 }

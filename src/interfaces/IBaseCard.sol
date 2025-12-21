@@ -3,15 +3,14 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IBaseCard
- * @notice Interface for BaseCard contract
+ * @notice Interface for the BaseCard NFT contract
  */
 interface IBaseCard {
     // =============================================================
-    //                          타입 정의
+    //                           Types
     // =============================================================
 
-    /// @notice [EN] Represents the data for a user's business card.
-    /// @notice [KR] 사용자의 비즈니스 명함에 담기는 데이터를 나타내는 구조체입니다.
+    /// @notice Represents the data stored on a user's BaseCard.
     struct CardData {
         string imageURI;
         string nickname;
@@ -20,43 +19,43 @@ interface IBaseCard {
     }
 
     // =============================================================
-    //                         관리자 함수
+    //                      Admin Functions
     // =============================================================
 
-    /// @notice [KR] [소유자 전용] 소셜 링크 허용 목록을 관리합니다.
+    /// @notice Sets whether a social key is allowed.
+    /// @dev Only callable by the contract owner.
+    /// @param _key The social media key (e.g., "twitter").
+    /// @param _isAllowed Whether the key should be allowed.
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external;
 
-    /// @notice [EN] [Owner Only] Manages the allowed roles whitelist.
-    /// @notice [KR] [소유자 전용] 허용 역할 목록을 관리합니다.
+    /// @notice Sets whether a role is allowed.
+    /// @dev Only callable by the contract owner.
+    /// @param _role The role name (e.g., "Developer").
+    /// @param _isAllowed Whether the role should be allowed.
     function setAllowedRole(string memory _role, bool _isAllowed) external;
 
     // =============================================================
-    //                          핵심 로직
+    //                      Minting Functions
     // =============================================================
 
-    /// @notice [EN] Mints a new BaseCard with initial card data AND social links.
-    /// @notice [KR] 초기 카드 데이터 및 소셜 링크와 함께 새로운 BaseCard NFT를 민팅합니다.
+    /// @notice Mints a new BaseCard with initial card data and social links.
+    /// @dev Each address can only mint one BaseCard.
+    /// @param _initialCardData The initial card data.
+    /// @param _socialKeys The social media keys to set.
+    /// @param _socialValues The corresponding social media values.
     function mintBaseCard(CardData memory _initialCardData, string[] memory _socialKeys, string[] memory _socialValues)
         external;
 
-    /// @notice [MODIFIED] Adds or updates an allowed social link.
-    /// @notice [KR] [NFT 소유자 전용] 허용된 소셜 링크를 추가/업데이트합니다.
-    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external;
+    // =============================================================
+    //                      Update Functions
+    // =============================================================
 
-    /// @notice [EN] [NFT Owner Only] Update default card information.
-    /// @notice [KR] [NFT 소유자 전용] 기본 카드 정보를 업데이트합니다.
-    function updateNickname(uint256 _tokenId, string memory _newNickname) external;
-
-    function updateBio(uint256 _tokenId, string memory _newBio) external;
-
-    function updateImageURI(uint256 _tokenId, string memory _newImageUri) external;
-
-    /// @notice [EN] [NFT Owner Only] Edit all card data and social links in a single transaction.
-    /// @notice [KR] [NFT 소유자 전용] 모든 카드 데이터와 소셜 링크를 한 트랜잭션에서 수정합니다.
+    /// @notice Edits all card data and social links in a single transaction.
+    /// @dev Only callable by the token owner. Pass empty string in socialValues to unlink.
     /// @param _tokenId The ID of the token to edit.
-    /// @param _newCardData The new card data to set.
-    /// @param _socialKeys The keys of social links to update.
-    /// @param _socialValues The values of social links to update.
+    /// @param _newCardData The new card data.
+    /// @param _socialKeys The social media keys to update.
+    /// @param _socialValues The corresponding values (empty string = unlink).
     function editBaseCard(
         uint256 _tokenId,
         CardData memory _newCardData,
@@ -64,40 +63,58 @@ interface IBaseCard {
         string[] memory _socialValues
     ) external;
 
+    /// @notice Links or unlinks a single social account.
+    /// @dev Only callable by the token owner. Pass empty string to unlink.
+    /// @param _tokenId The ID of the token.
+    /// @param _key The social media key.
+    /// @param _value The value to set (empty string = unlink).
+    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external;
+
+    /// @notice Updates the nickname.
+    /// @dev Only callable by the token owner. Cannot be empty.
+    /// @param _tokenId The ID of the token.
+    /// @param _newNickname The new nickname.
+    function updateNickname(uint256 _tokenId, string memory _newNickname) external;
+
+    /// @notice Updates the bio.
+    /// @dev Only callable by the token owner. Can be empty.
+    /// @param _tokenId The ID of the token.
+    /// @param _newBio The new bio.
+    function updateBio(uint256 _tokenId, string memory _newBio) external;
+
+    /// @notice Updates the image URI.
+    /// @dev Only callable by the token owner. Cannot be empty.
+    /// @param _tokenId The ID of the token.
+    /// @param _newImageUri The new image URI.
+    function updateImageURI(uint256 _tokenId, string memory _newImageUri) external;
+
     // =============================================================
-    //                     테스트넷 마이그레이션 함수
+    //                       View Functions
     // =============================================================
 
-    /// @notice [EN] For testnet users, we support migration token from testnet to mainnet.
-    /// @notice [KR] 테스트넷 사용자를 위해 테스트넷에서의 BaseCard 토큰을 메인넷으로 마이그레이션을 지원합니다.
-    function migrateBaseCardFromTestnet(
-        address _recipient,
-        CardData memory _initialCardData,
-        string[] memory _socialKeys,
-        string[] memory _socialValues
-    ) external;
-
-    // =============================================================
-    //                           조회 함수
-    // =============================================================
-
-    /// @notice [EN] Retrieves the social link value for a specific NFT.
-    /// @notice [KR] 특정 NFT의 소셜 링크 값을 조회합니다.
+    /// @notice Returns the social link value for a specific key.
+    /// @param _tokenId The ID of the token.
+    /// @param _key The social media key.
+    /// @return The social link value (empty if not set).
     function getSocial(uint256 _tokenId, string memory _key) external view returns (string memory);
 
-    /// @notice [EN] Checks if a specific social key is allowed.
-    /// @notice [KR] 특정 소셜 key가 허용되었는지 확인합니다.
+    /// @notice Checks if a social key is allowed.
+    /// @param _key The social media key to check.
+    /// @return True if the key is allowed.
     function isAllowedSocialKey(string memory _key) external view returns (bool);
 
-    /// @notice [EN] Checks if a specific role is allowed.
-    /// @notice [KR] 특정 역할이 허용되었는지 확인합니다.
+    /// @notice Checks if a role is allowed.
+    /// @param _role The role to check.
+    /// @return True if the role is allowed.
     function isAllowedRole(string memory _role) external view returns (bool);
 
-    /// @notice [EN] Checks if an address has already minted a BaseCard.
-    /// @notice [KR] 주소가 이미 BaseCard를 민팅했는지 확인합니다.
+    /// @notice Checks if an address has already minted a BaseCard.
+    /// @param _address The address to check.
+    /// @return True if the address has minted.
     function hasMinted(address _address) external view returns (bool);
 
-    /// @notice [EN] Returns the tokenId owned by the given address (0 if not minted).
-    /// @notice [KR] 주어진 주소가 소유한 tokenId를 반환합니다 (민팅하지 않은 경우 0).
+    /// @notice Returns the tokenId owned by the given address.
+    /// @param _owner The owner address.
+    /// @return The token ID (0 if not minted).
     function tokenIdOf(address _owner) external view returns (uint256);
 }

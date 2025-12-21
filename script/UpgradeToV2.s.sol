@@ -32,7 +32,7 @@ contract UpgradeBaseCardToV2 is Script {
             console.log("Please update you .env file to set proxy address for upgrade.");
             revert("Invalid proxy address");
         }
-    
+
         console.log("============================================================");
         console.log("Upgrading BaseCard V1 -> V2");
         console.log("============================================================");
@@ -43,18 +43,18 @@ contract UpgradeBaseCardToV2 is Script {
         // --- [Step 1] V1 상태 확인 ---
         console.log("[Step 1] Checking V1 State...");
         BaseCard baseCardV1 = BaseCard(proxyAddress);
-        
+
         address implAddressV1 = Upgrades.getImplementationAddress(proxyAddress);
         console.log("V1 Implementation Address:", implAddressV1);
-        
+
         string memory v1Name = baseCardV1.name();
         string memory v1Symbol = baseCardV1.symbol();
         address v1Owner = baseCardV1.owner();
-        
+
         console.log("V1 Name:", v1Name);
         console.log("V1 Symbol:", v1Symbol);
         console.log("V1 Owner:", v1Owner);
-        
+
         // 기존에 민팅된 카드가 있다면 확인
         try baseCardV1.balanceOf(deployer) returns (uint256 balance) {
             console.log("Deployer Balance:", balance);
@@ -82,40 +82,35 @@ contract UpgradeBaseCardToV2 is Script {
         // 민팅 여부 확인
         bool hasMinted = baseCardV1.hasMinted(deployer);
         console.log("Deployer Has Minted:", hasMinted);
-        
+
         console.log("");
 
         // --- [Step 2] V2로 업그레이드 실행 ---
         console.log("[Step 2] Upgrading to V2...");
-        
+
         vm.startBroadcast();
-        
+
         // Upgrades.upgradeProxy를 사용하여 V2로 업그레이드
         // - 자동으로 스토리지 레이아웃 호환성 체크 수행
         // - deployerAddress(owner) 권한으로 upgradeToAndCall 실행
         // V2 초기화 데이터 인코딩
         bytes memory data = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));
 
-        Upgrades.upgradeProxy(
-            proxyAddress,
-            "BaseCardV2.sol",
-            data, 
-            deployer
-        );
-        
+        Upgrades.upgradeProxy(proxyAddress, "BaseCardV2.sol", data, deployer);
+
         vm.stopBroadcast();
-        
+
         console.log("Upgrade Transaction Completed!");
         console.log("");
 
         // --- [Step 3] V2 상태 검증 ---
         console.log("[Step 3] Verifying V2 State...");
-        
+
         BaseCardV2 baseCardV2 = BaseCardV2(proxyAddress);
-        
+
         address implAddressV2 = Upgrades.getImplementationAddress(proxyAddress);
         console.log("V2 Implementation Address:", implAddressV2);
-        
+
         // 구현 주소가 변경되었는지 확인
         if (implAddressV2 != implAddressV1) {
             console.log("Implementation address changed: SUCCESS");
@@ -123,7 +118,7 @@ contract UpgradeBaseCardToV2 is Script {
             console.log("WARNING: Implementation address did not change!");
         }
         console.log("");
-        
+
         // 기존 상태가 보존되었는지 확인
         console.log("Checking State Preservation:");
         console.log("V2 Name:", baseCardV2.name());
@@ -137,7 +132,7 @@ contract UpgradeBaseCardToV2 is Script {
         bool v2HasMinted = baseCardV2.hasMinted(deployer);
         console.log("V2 Has Minted:", v2HasMinted);
         console.log("  - Preserved:", v2HasMinted == hasMinted);
-        
+
         // V2의 새로운 기능 확인
         console.log("");
         console.log("Testing V2 New Features:");
@@ -151,7 +146,7 @@ contract UpgradeBaseCardToV2 is Script {
                 } catch {}
             }
         } catch {}
-        
+
         console.log("");
         console.log("============================================================");
         console.log("Upgrade Complete!");
