@@ -332,13 +332,21 @@ contract BaseCard is
             revert Errors.NotAllowedSocialKey(_key);
         }
 
-        $._socials[_tokenId][_key] = _value;
-
-        emit Events.SocialLinked(_tokenId, _key, _value);
+        // 빈 문자열이면 삭제, 아니면 업데이트 (editBaseCard와 동일한 동작)
+        if (bytes(_value).length == 0) {
+            delete $._socials[_tokenId][_key];
+            emit Events.SocialUnlinked(_tokenId, _key);
+        } else {
+            $._socials[_tokenId][_key] = _value;
+            emit Events.SocialLinked(_tokenId, _key, _value);
+        }
     }
 
     /// @inheritdoc IBaseCard
     function updateNickname(uint256 _tokenId, string memory _newNickname) external onlyTokenOwner(_tokenId) {
+        if (bytes(_newNickname).length == 0) {
+            revert Errors.EmptyNickname();
+        }
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._cardData[_tokenId].nickname = _newNickname;
     }
@@ -351,6 +359,9 @@ contract BaseCard is
 
     /// @inheritdoc IBaseCard
     function updateImageURI(uint256 _tokenId, string memory _newImageUri) external onlyTokenOwner(_tokenId) {
+        if (bytes(_newImageUri).length == 0) {
+            revert Errors.EmptyImageURI();
+        }
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._cardData[_tokenId].imageURI = _newImageUri;
     }
