@@ -52,6 +52,7 @@ contract BaseCard is
         string[] allRoles;
         mapping(address => uint256) ownerToTokenId;
         address migrationAdmin;
+        mapping(uint256 => mapping(address => bool)) _tokenDelegates;
     }
 
     // keccak256(abi.encode(uint256(keccak256("basecardteam.BaseCard")) - 1)) & ~bytes32(uint256(0xff))
@@ -62,8 +63,8 @@ contract BaseCard is
     //                          Modifiers
     // =============================================================
 
-    modifier onlyTokenOwner(uint256 _tokenId) {
-        _checkTokenOwner(_tokenId);
+    modifier onlyTokenOperator(uint256 _tokenId) {
+        _checkTokenOperator(_tokenId);
         _;
     }
 
@@ -79,6 +80,13 @@ contract BaseCard is
     function _checkTokenOwner(uint256 _tokenId) internal view {
         if (ownerOf(_tokenId) != msg.sender) {
             revert Errors.NotTokenOwner(msg.sender, _tokenId);
+        }
+    }
+
+    function _checkTokenOperator(uint256 _tokenId) internal view {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        if (ownerOf(_tokenId) != msg.sender && !$._tokenDelegates[_tokenId][msg.sender]) {
+            revert Errors.NotTokenOperator(msg.sender, _tokenId);
         }
     }
 
@@ -217,9 +225,12 @@ contract BaseCard is
     // =============================================================
 
     /// @inheritdoc IBaseCard
-    function mintBaseCard(CardData memory _initialCardData, string[] memory _socialKeys, string[] memory _socialValues)
-        external
-    {
+    function mintBaseCard(
+        CardData memory _initialCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues,
+        address[] memory _initialDelegates
+    ) external {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
         if ($.hasMinted[msg.sender]) {
@@ -251,6 +262,15 @@ contract BaseCard is
             emit Events.SocialLinked(tokenId, key, value);
         }
 
+        // Set initial delegates
+        for (uint256 i = 0; i < _initialDelegates.length; i++) {
+            address delegate = _initialDelegates[i];
+            if (delegate != address(0) && !$._tokenDelegates[tokenId][delegate]) {
+                $._tokenDelegates[tokenId][delegate] = true;
+                emit Events.TokenDelegateGranted(tokenId, delegate);
+            }
+        }
+
         emit Events.MintBaseCard(msg.sender, tokenId);
     }
 
@@ -264,7 +284,7 @@ contract BaseCard is
         CardData memory _newCardData,
         string[] memory _socialKeys,
         string[] memory _socialValues
-    ) external onlyTokenOwner(_tokenId) {
+    ) external onlyTokenOperator(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
         if (_socialKeys.length != _socialValues.length) {
@@ -297,7 +317,7 @@ contract BaseCard is
     }
 
     /// @inheritdoc IBaseCard
-    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external onlyTokenOwner(_tokenId) {
+    function linkSocial(uint256 _tokenId, string memory _key, string memory _value) external onlyTokenOperator(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
 
         if (!$._allowedSocialKeys[_key]) {
@@ -314,7 +334,7 @@ contract BaseCard is
     }
 
     /// @inheritdoc IBaseCard
-    function updateNickname(uint256 _tokenId, string memory _newNickname) external onlyTokenOwner(_tokenId) {
+    function updateNickname(uint256 _tokenId, string memory _newNickname) external onlyTokenOperator(_tokenId) {
         if (bytes(_newNickname).length == 0) {
             revert Errors.EmptyNickname();
         }
@@ -323,18 +343,61 @@ contract BaseCard is
     }
 
     /// @inheritdoc IBaseCard
-    function updateBio(uint256 _tokenId, string memory _newBio) external onlyTokenOwner(_tokenId) {
+    function updateBio(uint256 _tokenId, string memory _newBio) external onlyTokenOperator(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._cardData[_tokenId].bio = _newBio;
     }
 
     /// @inheritdoc IBaseCard
-    function updateImageURI(uint256 _tokenId, string memory _newImageUri) external onlyTokenOwner(_tokenId) {
+    function updateImageURI(uint256 _tokenId, string memory _newImageUri) external onlyTokenOperator(_tokenId) {
         if (bytes(_newImageUri).length == 0) {
             revert Errors.EmptyImageURI();
         }
         BaseCardStorage storage $ = _getBaseCardStorage();
         $._cardData[_tokenId].imageURI = _newImageUri;
+    }
+
+    // =============================================================
+    //                    Delegate Functions
+    // =============================================================
+
+    /// @inheritdoc IBaseCard
+    function grantTokenDelegate(uint256 _tokenId, address _delegate) external {
+        _checkTokenOwner(_tokenId);
+        if (_delegate == address(0)) revert Errors.AddressZero();
+
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        if ($._tokenDelegates[_tokenId][_delegate]) {
+            revert Errors.AlreadyDelegate(_delegate, _tokenId);
+        }
+
+        $._tokenDelegates[_tokenId][_delegate] = true;
+        emit Events.TokenDelegateGranted(_tokenId, _delegate);
+    }
+
+    /// @inheritdoc IBaseCard
+    function revokeTokenDelegate(uint256 _tokenId, address _delegate) external {
+        _checkTokenOwner(_tokenId);
+
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        if (!$._tokenDelegates[_tokenId][_delegate]) {
+            revert Errors.NotDelegate(_delegate, _tokenId);
+        }
+
+        $._tokenDelegates[_tokenId][_delegate] = false;
+        emit Events.TokenDelegateRevoked(_tokenId, _delegate);
+    }
+
+    /// @inheritdoc IBaseCard
+    function isTokenOperator(uint256 _tokenId, address _account) public view returns (bool) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        return ownerOf(_tokenId) == _account || $._tokenDelegates[_tokenId][_account];
+    }
+
+    /// @inheritdoc IBaseCard
+    function isTokenDelegate(uint256 _tokenId, address _delegate) external view returns (bool) {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        return $._tokenDelegates[_tokenId][_delegate];
     }
 
     // =============================================================
@@ -456,5 +519,48 @@ contract BaseCard is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override(ERC721Upgradeable)
+        returns (address)
+    {
+        address from = _ownerOf(tokenId);
+        BaseCardStorage storage $ = _getBaseCardStorage();
+
+        // If this is a transfer (not mint or burn)
+        if (from != address(0) && to != address(0)) {
+            // Restrict transfers to delegates only
+            if (!$._tokenDelegates[tokenId][to]) {
+                revert Errors.TransferToNonDelegate(to, tokenId);
+            }
+
+            // Update ownerToTokenId mapping
+            delete $.ownerToTokenId[from];
+            $.ownerToTokenId[to] = tokenId;
+        }
+
+        return super._update(to, tokenId, auth);
+    }
+
+    /// @dev Override to allow delegates to transfer the token.
+    function _isAuthorized(address owner, address spender, uint256 tokenId)
+        internal
+        view
+        override(ERC721Upgradeable)
+        returns (bool)
+    {
+        BaseCardStorage storage $ = _getBaseCardStorage();
+        // Standard ERC721 authorization OR delegate authorization
+        return super._isAuthorized(owner, spender, tokenId)
+            || $._tokenDelegates[tokenId][spender];
+    }
+
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721Upgradeable)
+    {
+        super._increaseBalance(account, value);
     }
 }

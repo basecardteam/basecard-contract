@@ -47,7 +47,7 @@ contract BaseCardUpgradeTest is Test {
         socialValues[1] = "alice";
 
         vm.prank(user1);
-        baseCardV1.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCardV1.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         // V1 상태 검증
         assertEq(baseCardV1.balanceOf(user1), 1, "V1 balance incorrect");
@@ -141,7 +141,7 @@ contract BaseCardUpgradeTest is Test {
         string[] memory socialValues = new string[](0);
 
         vm.prank(user1);
-        baseCardV1.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCardV1.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         // V2로 업그레이드
         bytes memory upgradeData = abi.encodeCall(BaseCardV2.initializeV2, ("v2.0.0"));

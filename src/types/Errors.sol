@@ -50,4 +50,24 @@ library Errors {
     /// @notice Thrown when an unauthorized address attempts a migration-admin-only action.
     /// @param caller The unauthorized caller.
     error NotMigrationAdmin(address caller);
+
+    /// @notice Thrown when an action is attempted by someone who is neither owner nor delegate.
+    /// @param caller The unauthorized caller.
+    /// @param tokenId The token ID.
+    error NotTokenOperator(address caller, uint256 tokenId);
+
+    /// @notice Thrown when trying to add a delegate that is already registered.
+    /// @param delegate The address that is already a delegate.
+    /// @param tokenId The token ID.
+    error AlreadyDelegate(address delegate, uint256 tokenId);
+
+    /// @notice Thrown when trying to remove a delegate that is not registered.
+    /// @param delegate The address that is not a delegate.
+    /// @param tokenId The token ID.
+    error NotDelegate(address delegate, uint256 tokenId);
+
+    /// @notice Thrown when trying to transfer token to a non-delegate address.
+    /// @param to The address that is not a delegate.
+    /// @param tokenId The token ID.
+    error TransferToNonDelegate(address to, uint256 tokenId);
 }

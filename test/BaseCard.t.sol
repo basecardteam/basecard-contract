@@ -57,7 +57,7 @@ contract BaseCardTest is Test {
         socialValues[1] = "alice";
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         assertEq(baseCard.balanceOf(user1), 1, "User should have 1 NFT");
         assertEq(baseCard.hasMinted(user1), true, "User should have minted");
@@ -77,11 +77,11 @@ contract BaseCardTest is Test {
         string[] memory socialValues = new string[](0);
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(Errors.AlreadyMinted.selector, user1));
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
     }
 
     function test_MintBaseCard_RevertsIfEmptyNickname() public {
@@ -96,7 +96,7 @@ contract BaseCardTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(Errors.EmptyNickname.selector));
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
     }
 
     function test_MintBaseCard_RevertsIfEmptyImageURI() public {
@@ -110,7 +110,7 @@ contract BaseCardTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(Errors.EmptyImageURI.selector));
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
     }
 
     function test_MintBaseCard_RevertsIfInvalidRole() public {
@@ -125,7 +125,37 @@ contract BaseCardTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(Errors.NotAllowedRole.selector, "InvalidRole"));
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
+    }
+
+    function test_MintBaseCard_WithInitialDelegates() public {
+        BaseCard baseCard = BaseCard(proxy);
+
+        IBaseCard.CardData memory cardData = IBaseCard.CardData({
+            imageURI: "https://example.com/image.png", nickname: "Alice", role: "Developer", bio: "Hello World"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        // Set user2 as initial delegate
+        address[] memory initialDelegates = new address[](1);
+        initialDelegates[0] = user2;
+
+        vm.prank(user1);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, initialDelegates);
+
+        // Verify user2 is a delegate
+        assertTrue(baseCard.isTokenDelegate(1, user2), "user2 should be delegate");
+        assertTrue(baseCard.isTokenOperator(1, user2), "user2 should be operator");
+
+        // Verify user2 can edit
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/new.png", nickname: "NewNickname", role: "Designer", bio: "NewBio"
+        });
+
+        vm.prank(user2);
+        baseCard.editBaseCard(1, newCardData, new string[](0), new string[](0));
     }
 
     // =============================================================
@@ -194,7 +224,7 @@ contract BaseCardTest is Test {
         string[] memory socialValues = new string[](0);
 
         vm.prank(user2);
-        vm.expectRevert(abi.encodeWithSelector(Errors.NotTokenOwner.selector, user2, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotTokenOperator.selector, user2, tokenId));
         baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
     }
 
@@ -412,7 +442,7 @@ contract BaseCardTest is Test {
         socialValues[0] = "bob#1234";
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         assertEq(baseCard.getSocial(1, "discord"), "bob#1234");
     }
@@ -435,7 +465,7 @@ contract BaseCardTest is Test {
         string[] memory socialValues = new string[](0);
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         string memory uri = baseCard.tokenURI(1);
 
@@ -469,7 +499,7 @@ contract BaseCardTest is Test {
         socialValues[1] = "alice_dev";
 
         vm.prank(user1);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         string memory uri = baseCard.tokenURI(1);
         string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
@@ -499,6 +529,132 @@ contract BaseCardTest is Test {
     }
 
     // =============================================================
+    //                      Delegate Tests
+    // =============================================================
+
+    function test_GrantTokenDelegate() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        assertTrue(baseCard.isTokenDelegate(tokenId, user2));
+        assertTrue(baseCard.isTokenOperator(tokenId, user2));
+    }
+
+    function test_RevokeTokenDelegate() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        vm.prank(user1);
+        baseCard.revokeTokenDelegate(tokenId, user2);
+
+        assertFalse(baseCard.isTokenDelegate(tokenId, user2));
+        assertFalse(baseCard.isTokenOperator(tokenId, user2));
+    }
+
+    function test_Delegate_CanEditBaseCard() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        IBaseCard.CardData memory newCardData = IBaseCard.CardData({
+            imageURI: "https://example.com/delegate.png",
+            nickname: "DelegateNickname",
+            role: "Designer",
+            bio: "Edited by delegate"
+        });
+
+        string[] memory socialKeys = new string[](0);
+        string[] memory socialValues = new string[](0);
+
+        // user2 (delegate) can edit
+        vm.prank(user2);
+        baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
+
+        // Verify the edit
+        string memory uri = baseCard.tokenURI(tokenId);
+        string memory base64Data = _removePrefix(uri, "data:application/json;base64,");
+        string memory decodedJson = string(Base64.decode(base64Data));
+
+        assertEq(vm.parseJsonString(decodedJson, ".nickname"), "DelegateNickname");
+    }
+
+    function test_Delegate_CanLinkSocial() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        vm.prank(user2);
+        baseCard.linkSocial(tokenId, "github", "delegate_github");
+
+        assertEq(baseCard.getSocial(tokenId, "github"), "delegate_github");
+    }
+
+    function test_GrantDelegate_RevertsIfNotOwner() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotTokenOwner.selector, user2, tokenId));
+        baseCard.grantTokenDelegate(tokenId, user2);
+    }
+
+    function test_GrantDelegate_RevertsIfAlreadyDelegate() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.AlreadyDelegate.selector, user2, tokenId));
+        baseCard.grantTokenDelegate(tokenId, user2);
+    }
+
+    function test_RevokeDelegate_RevertsIfNotDelegate() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Errors.NotDelegate.selector, user2, tokenId));
+        baseCard.revokeTokenDelegate(tokenId, user2);
+    }
+
+    function test_TokenDelegateGranted_EmitsEvent() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.expectEmit(true, true, false, true);
+        emit Events.TokenDelegateGranted(tokenId, user2);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+    }
+
+    function test_TokenDelegateRevoked_EmitsEvent() public {
+        BaseCard baseCard = BaseCard(proxy);
+        uint256 tokenId = _mintCardForUser(user1);
+
+        vm.prank(user1);
+        baseCard.grantTokenDelegate(tokenId, user2);
+
+        vm.expectEmit(true, true, false, true);
+        emit Events.TokenDelegateRevoked(tokenId, user2);
+
+        vm.prank(user1);
+        baseCard.revokeTokenDelegate(tokenId, user2);
+    }
+
+    // =============================================================
     //                      Helper Functions
     // =============================================================
 
@@ -518,7 +674,7 @@ contract BaseCardTest is Test {
         socialValues[0] = "@original";
 
         vm.prank(user);
-        baseCard.mintBaseCard(cardData, socialKeys, socialValues);
+        baseCard.mintBaseCard(cardData, socialKeys, socialValues, new address[](0));
 
         return baseCard.tokenIdOf(user);
     }
