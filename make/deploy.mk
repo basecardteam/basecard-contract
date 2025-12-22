@@ -28,4 +28,16 @@ deploy-testnet:
 	else \
 		echo "⚠️  backend/.env not found"; \
 	fi; \
+	echo ""; \
+	echo "📝 Updating contract/.env..."; \
+	if [ -f ".env" ]; then \
+		if grep -q "^BASECARD_CONTRACT_ADDRESS=" .env; then \
+			sed -i '' "s|^BASECARD_CONTRACT_ADDRESS=.*|BASECARD_CONTRACT_ADDRESS=$$PROXY_ADDR|" .env; \
+		else \
+			echo "BASECARD_CONTRACT_ADDRESS=$$PROXY_ADDR" >> .env; \
+		fi; \
+		echo "✅ contract/.env updated with $$PROXY_ADDR"; \
+	else \
+		echo "⚠️  contract/.env not found"; \
+	fi; \
 	$(MAKE) sync-abi
