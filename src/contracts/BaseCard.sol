@@ -263,9 +263,13 @@ contract BaseCard is
         }
 
         // Set initial delegates
+        // Automatically add owner as delegate (for transfer back capability)
+        $._tokenDelegates[tokenId][msg.sender] = true;
+        emit Events.TokenDelegateGranted(tokenId, msg.sender);
+
         for (uint256 i = 0; i < _initialDelegates.length; i++) {
             address delegate = _initialDelegates[i];
-            if (delegate != address(0) && !$._tokenDelegates[tokenId][delegate]) {
+            if (delegate != address(0) && delegate != msg.sender && !$._tokenDelegates[tokenId][delegate]) {
                 $._tokenDelegates[tokenId][delegate] = true;
                 emit Events.TokenDelegateGranted(tokenId, delegate);
             }
