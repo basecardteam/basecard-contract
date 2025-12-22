@@ -24,7 +24,7 @@ interface IBaseCard {
 
     /// @notice Sets whether a social key is allowed.
     /// @dev Only callable by the contract owner.
-    /// @param _key The social media key (e.g., "twitter").
+    /// @param _key The social media key (e.g., "x").
     /// @param _isAllowed Whether the key should be allowed.
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external;
 

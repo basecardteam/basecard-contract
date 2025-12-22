@@ -49,7 +49,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         socialKeys[1] = "github";
 
         string[] memory socialValues = new string[](2);
@@ -62,7 +62,7 @@ contract BaseCardTest is Test {
         assertEq(baseCard.balanceOf(user1), 1, "User should have 1 NFT");
         assertEq(baseCard.hasMinted(user1), true, "User should have minted");
         assertEq(baseCard.tokenIdOf(user1), 1, "Token ID should be 1");
-        assertEq(baseCard.getSocial(1, "twitter"), "@alice", "Twitter should be linked");
+        assertEq(baseCard.getSocial(1, "x"), "@alice", "X should be linked");
         assertEq(baseCard.getSocial(1, "github"), "alice", "GitHub should be linked");
     }
 
@@ -141,10 +141,10 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         socialKeys[1] = "github";
         string[] memory socialValues = new string[](2);
-        socialValues[0] = "@updated_twitter";
+        socialValues[0] = "@updated_x";
         socialValues[1] = "new_github";
 
         vm.prank(user1);
@@ -160,7 +160,7 @@ contract BaseCardTest is Test {
         assertEq(vm.parseJsonString(decodedJson, ".bio"), "NewBio");
         assertEq(vm.parseJsonString(decodedJson, ".image"), "https://example.com/new.png");
 
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "@updated_twitter");
+        assertEq(baseCard.getSocial(tokenId, "x"), "@updated_x");
         assertEq(baseCard.getSocial(tokenId, "github"), "new_github");
     }
 
@@ -207,7 +207,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         socialKeys[1] = "github";
         string[] memory socialValues = new string[](1);
         socialValues[0] = "@updated";
@@ -222,7 +222,7 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         // Verify initial social is set
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "@original");
+        assertEq(baseCard.getSocial(tokenId, "x"), "@original");
 
         IBaseCard.CardData memory newCardData = IBaseCard.CardData({
             imageURI: "https://example.com/original.png",
@@ -232,18 +232,18 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](1);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         string[] memory socialValues = new string[](1);
         socialValues[0] = ""; // Empty string to unlink
 
         vm.expectEmit(true, false, false, true);
-        emit Events.SocialUnlinked(tokenId, "twitter");
+        emit Events.SocialUnlinked(tokenId, "x");
 
         vm.prank(user1);
         baseCard.editBaseCard(tokenId, newCardData, socialKeys, socialValues);
 
         // Verify social is unlinked
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "");
+        assertEq(baseCard.getSocial(tokenId, "x"), "");
     }
 
     // =============================================================
@@ -265,12 +265,12 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         // Initial link is @original
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "@original");
+        assertEq(baseCard.getSocial(tokenId, "x"), "@original");
 
         vm.prank(user1);
-        baseCard.linkSocial(tokenId, "twitter", "@updated");
+        baseCard.linkSocial(tokenId, "x", "@updated");
 
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "@updated");
+        assertEq(baseCard.getSocial(tokenId, "x"), "@updated");
     }
 
     function test_LinkSocial_UnlinkWithEmptyString() public {
@@ -278,12 +278,12 @@ contract BaseCardTest is Test {
         uint256 tokenId = _mintCardForUser(user1);
 
         vm.expectEmit(true, false, false, true);
-        emit Events.SocialUnlinked(tokenId, "twitter");
+        emit Events.SocialUnlinked(tokenId, "x");
 
         vm.prank(user1);
-        baseCard.linkSocial(tokenId, "twitter", "");
+        baseCard.linkSocial(tokenId, "x", "");
 
-        assertEq(baseCard.getSocial(tokenId, "twitter"), "");
+        assertEq(baseCard.getSocial(tokenId, "x"), "");
     }
 
     function test_LinkSocial_RevertsIfNotAllowedKey() public {
@@ -461,7 +461,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](2);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         socialKeys[1] = "github";
 
         string[] memory socialValues = new string[](2);
@@ -478,7 +478,7 @@ contract BaseCardTest is Test {
         string memory xKey = vm.parseJsonString(decodedJson, ".socials[0].key");
         string memory xValue = vm.parseJsonString(decodedJson, ".socials[0].value");
 
-        assertEq(xKey, "twitter");
+        assertEq(xKey, "x");
         assertEq(xValue, "@alice");
 
         string memory githubKey = vm.parseJsonString(decodedJson, ".socials[1].key");
@@ -513,7 +513,7 @@ contract BaseCardTest is Test {
         });
 
         string[] memory socialKeys = new string[](1);
-        socialKeys[0] = "twitter";
+        socialKeys[0] = "x";
         string[] memory socialValues = new string[](1);
         socialValues[0] = "@original";
 

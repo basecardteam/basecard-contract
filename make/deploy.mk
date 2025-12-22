@@ -17,4 +17,15 @@ deploy-testnet:
 	fi; \
 	echo "🔗 Proxy Address: $$PROXY_ADDR"; \
 	echo ""; \
+	echo "📝 Updating backend/.env..."; \
+	if [ -f "../backend/.env" ]; then \
+		if grep -q "^BASECARD_CONTRACT_ADDRESS=" ../backend/.env; then \
+			sed -i '' "s|^BASECARD_CONTRACT_ADDRESS=.*|BASECARD_CONTRACT_ADDRESS=$$PROXY_ADDR|" ../backend/.env; \
+		else \
+			echo "BASECARD_CONTRACT_ADDRESS=$$PROXY_ADDR" >> ../backend/.env; \
+		fi; \
+		echo "✅ backend/.env updated with $$PROXY_ADDR"; \
+	else \
+		echo "⚠️  backend/.env not found"; \
+	fi; \
 	$(MAKE) sync-abi

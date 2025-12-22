@@ -210,7 +210,7 @@ sequenceDiagram
 
 ## Allowed Social Keys
 
-- `twitter`
+- `x`
 - `farcaster`
 - `website`
 - `github`

@@ -25,7 +25,7 @@ JSON_INPUT='{
     "bio": "abc"
   },
   "social_keys": [
-    "twitter",
+    "x",
     "github",
     "farcaster"
   ],

@@ -133,7 +133,7 @@ contract BaseCard is
         $._nextTokenId = 1;
 
         // Initialize default social keys
-        string[6] memory defaultKeys = ["twitter", "farcaster", "website", "github", "linkedin", "basename"];
+        string[6] memory defaultKeys = ["x", "farcaster", "website", "github", "linkedin", "basename"];
         for (uint256 i = 0; i < defaultKeys.length; i++) {
             $._allowedSocialKeys[defaultKeys[i]] = true;
             $.allSocialKeys.push(defaultKeys[i]);

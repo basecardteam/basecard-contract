@@ -12,7 +12,7 @@ library Events {
 
     /// @notice Emitted when a social account is linked to a token.
     /// @param tokenId The ID of the token.
-    /// @param key The social media key (e.g., "twitter", "farcaster").
+    /// @param key The social media key (e.g., "x", "farcaster").
     /// @param value The user's handle/ID on that platform.
     event SocialLinked(uint256 indexed tokenId, string key, string value);
 
