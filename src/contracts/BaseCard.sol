@@ -297,7 +297,19 @@ contract BaseCard is
 
         _validateCardData(_newCardData);
 
-        $._cardData[_tokenId] = _newCardData;
+        bool hasChanged = false;
+
+        // Check if CardData changed
+        CardData memory currentData = $._cardData[_tokenId];
+        if (
+            keccak256(bytes(currentData.nickname)) != keccak256(bytes(_newCardData.nickname))
+                || keccak256(bytes(currentData.imageURI)) != keccak256(bytes(_newCardData.imageURI))
+                || keccak256(bytes(currentData.role)) != keccak256(bytes(_newCardData.role))
+                || keccak256(bytes(currentData.bio)) != keccak256(bytes(_newCardData.bio))
+        ) {
+            $._cardData[_tokenId] = _newCardData;
+            hasChanged = true;
+        }
 
         // Update social links
         for (uint256 i = 0; i < _socialKeys.length; i++) {
@@ -308,16 +320,24 @@ contract BaseCard is
                 revert Errors.NotAllowedSocialKey(key);
             }
 
-            if (bytes(value).length == 0) {
-                delete $._socials[_tokenId][key];
-                emit Events.SocialUnlinked(_tokenId, key);
-            } else {
-                $._socials[_tokenId][key] = value;
-                emit Events.SocialLinked(_tokenId, key, value);
+            string memory currentValue = $._socials[_tokenId][key];
+
+            // Only update if value changed
+            if (keccak256(bytes(currentValue)) != keccak256(bytes(value))) {
+                if (bytes(value).length == 0) {
+                    delete $._socials[_tokenId][key];
+                    emit Events.SocialUnlinked(_tokenId, key);
+                } else {
+                    $._socials[_tokenId][key] = value;
+                    emit Events.SocialLinked(_tokenId, key, value);
+                }
+                hasChanged = true;
             }
         }
 
-        emit Events.BaseCardEdited(_tokenId);
+        if (hasChanged) {
+            emit Events.BaseCardEdited(_tokenId);
+        }
     }
 
     /// @inheritdoc IBaseCard
