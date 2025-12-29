@@ -61,8 +61,25 @@ get-token-by-address:
 	echo "🔍 Getting tokenURI..."; \
 	$(MAKE) token-uri TOKEN_ID=$$TOKEN_ID
 
-## Get contract version (if available)
-# Usage: make version
 version:
 	@echo "🔍 Getting contract version..."
 	@cast call $(BASECARD_CONTRACT_ADDRESS) "version()(string)" --rpc-url $(NETWORK) 2>/dev/null || echo "❌ version() not available"
+
+## Get token by address on Testnet
+# Usage: make get-token-testnet <address>
+get-token-testnet:
+	@if [ ! -f .env.dev ]; then echo "❌ .env.dev not found"; exit 1; fi
+	@export $$(grep -v '^#' .env.dev | xargs) && \
+	$(MAKE) get-token-by-address $(filter-out $@,$(MAKECMDGOALS)) \
+		NETWORK="base_sepolia" \
+		BASECARD_CONTRACT_ADDRESS=$$BASECARD_CONTRACT_ADDRESS
+
+## Get token by address on Mainnet
+# Usage: make get-token-mainnet <address>
+get-token-mainnet:
+	@if [ ! -f .env.prod ]; then echo "❌ .env.prod not found"; exit 1; fi
+	@export $$(grep -v '^#' .env.prod | xargs) && \
+	$(MAKE) get-token-by-address $(filter-out $@,$(MAKECMDGOALS)) \
+		NETWORK="base_mainnet" \
+		BASECARD_CONTRACT_ADDRESS=$$BASECARD_CONTRACT_ADDRESS
+
