@@ -2,7 +2,7 @@
 #                       BaseCard Makefile
 # =================================================================
 
-include .env
+-include .env
 export
 
 include make/deploy.mk

@@ -65,7 +65,7 @@ deploy-testnet: _deploy_run
 ## Deploy to Mainnet (Base Mainnet)
 # Usage: make deploy-mainnet
 deploy-mainnet: ENV_FILE=.env.prod
-deploy-mainnet: RPC_URL=base
+deploy-mainnet: RPC_URL=base_mainnet
 deploy-mainnet: NETWORK_NAME="Base Mainnet"
 deploy-mainnet: CHAIN_ID=8453
 deploy-mainnet: _deploy_run
