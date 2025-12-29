@@ -1,5 +1,0 @@
-!mocks/** 
-.mn
-.password
-.env.*
-!.env.example
