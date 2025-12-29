@@ -14,25 +14,26 @@ flowchart TB
         S5["_allowedSocialKeys[key]"]
         S6["_allowedRoles[role]"]
         S7["ownerToTokenId[address]"]
-        S8["migrationAdmin"]
+        S8["allSocialKeys[]"]
+        S9["allRoles[]"]
     end
 
     subgraph Functions["⚙️ Core Functions"]
         F1["mintBaseCard()"]
-        F2["migrateBaseCardFromTestnet()"]
-        F3["editBaseCard()"]
-        F4["linkSocial()"]
+        F2["editBaseCard()"]
+        F3["linkSocial()"]
+        F4["updateNickname()"]
+        F5["updateBio()"]
+        F6["updateImageURI()"]
     end
 
     subgraph Admin["🔐 Admin Functions"]
         A1["setAllowedSocialKey()"]
         A2["setAllowedRole()"]
-        A3["setMigrationAdmin()"]
     end
 
     F1 --> V1["_validateCardData()"]
     F2 --> V1
-    F3 --> V1
     V1 --> S6
 ```
 
@@ -149,6 +150,49 @@ sequenceDiagram
 
 ---
 
+## linkSocial Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Contract
+    participant Storage
+
+    User->>Contract: linkSocial(tokenId, key, value)
+
+    Contract->>Storage: Verify ownerOf(tokenId) == msg.sender
+    alt Not Owner
+        Contract-->>User: ❌ NotTokenOwner
+    end
+
+    Contract->>Storage: Validate _allowedSocialKeys[key]
+    alt Not Allowed
+        Contract-->>User: ❌ NotAllowedSocialKey
+    end
+
+    alt value == ""
+        Contract->>Storage: delete _socials[tokenId][key]
+        Contract-->>User: 📢 SocialUnlinked
+    else value != ""
+        Contract->>Storage: _socials[tokenId][key] = value
+        Contract-->>User: 📢 SocialLinked
+    end
+```
+
+---
+
+## Individual Update Functions
+
+| Function           | Validation      | Updates                       |
+| ------------------ | --------------- | ----------------------------- |
+| `updateNickname()` | Cannot be empty | `_cardData[tokenId].nickname` |
+| `updateBio()`      | Allows empty    | `_cardData[tokenId].bio`      |
+| `updateImageURI()` | Cannot be empty | `_cardData[tokenId].imageURI` |
+
+> All update functions require `onlyTokenOwner` modifier.
+
+---
+
 ## Allowed Roles
 
 | Role        | Description                                           |
@@ -160,13 +204,13 @@ sequenceDiagram
 | `BD`        | Drive partnerships and expand business opportunities  |
 | `PM`        | Manage products and coordinate teams to deliver value |
 
-> **Note**: Use `setAllowedRole("NewRole", true)` to add new roles in v2 upgrades.
+> **Note**: Use `setAllowedRole("NewRole", true)` to add new roles.
 
 ---
 
 ## Allowed Social Keys
 
-- `twitter`
+- `x`
 - `farcaster`
 - `website`
 - `github`

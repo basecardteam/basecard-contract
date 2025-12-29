@@ -2,7 +2,7 @@
 #                       BaseCard Makefile
 # =================================================================
 
-include .env
+-include .env
 export
 
 include make/deploy.mk
@@ -25,11 +25,14 @@ fmt:
 clean:
 	@forge clean
 
-## Sync ABI to miniapp
+## Sync ABI to miniapp and backend
 sync-abi:
 	@echo "📦 Syncing ABI to miniapp..."
 	@cp out/BaseCard.sol/BaseCard.json ../miniapp/lib/abi/BaseCard.json
 	@echo "✅ ABI synced to miniapp/lib/abi/BaseCard.json"
+	@echo "📦 Syncing ABI to backend..."
+	@cp out/BaseCard.sol/BaseCard.json ../backend/src/modules/blockchain/abi/BaseCard.json
+	@echo "✅ ABI synced to backend/src/modules/blockchain/abi/BaseCard.json"
 
 # =============================================================
 #                 Positional Arguments Handler

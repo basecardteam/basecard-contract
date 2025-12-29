@@ -20,11 +20,11 @@ JSON_INPUT='{
     "imageUri": "ipfs://bafkreigqz5iakvf4hz5mj3pa2pczirth25so7756yqydpo7ugoueiyw2bq"
   },
   "social_keys": [
-    "twitter",
+    "x",
     "farcaster"
   ],
   "social_values": [
-    "@alice_twitter",
+    "@alice_x",
     "@alice.farcaster.eth"
   ]
 }'

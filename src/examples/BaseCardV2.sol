@@ -43,7 +43,7 @@ contract BaseCardV2 is BaseCard {
     /// @dev 여러 소셜 링크를 한 번에 업데이트하여 가스 절약
     function batchLinkSocial(uint256 _tokenId, string[] memory _keys, string[] memory _values)
         external
-        onlyTokenOwner(_tokenId)
+        onlyTokenOperator(_tokenId)
     {
         if (_keys.length != _values.length) {
             revert Errors.MismatchedSocialKeysAndValues();
@@ -73,7 +73,7 @@ contract BaseCardV2 is BaseCard {
         string memory _newBio,
         string memory _newImageUri,
         string memory _newRole
-    ) external onlyTokenOwner(_tokenId) {
+    ) external onlyTokenOperator(_tokenId) {
         BaseCardStorage storage $ = _getBaseCardStorage();
         CardData storage cardData = $._cardData[_tokenId];
 

@@ -26,12 +26,12 @@ JSON_INPUT='{
     "bio": "Updated bio text"
   },
   "social_keys": [
-    "twitter",
+    "x",
     "github",
     "farcaster"
   ],
   "social_values": [
-    "@updated_twitter",
+    "@updated_x",
     "UpdatedGithub",
     "@updated_farcaster"
   ]

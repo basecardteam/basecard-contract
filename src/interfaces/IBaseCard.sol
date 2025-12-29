@@ -24,7 +24,7 @@ interface IBaseCard {
 
     /// @notice Sets whether a social key is allowed.
     /// @dev Only callable by the contract owner.
-    /// @param _key The social media key (e.g., "twitter").
+    /// @param _key The social media key (e.g., "x").
     /// @param _isAllowed Whether the key should be allowed.
     function setAllowedSocialKey(string memory _key, bool _isAllowed) external;
 
@@ -38,13 +38,18 @@ interface IBaseCard {
     //                      Minting Functions
     // =============================================================
 
-    /// @notice Mints a new BaseCard with initial card data and social links.
+    /// @notice Mints a new BaseCard with initial card data, social links, and delegates.
     /// @dev Each address can only mint one BaseCard.
     /// @param _initialCardData The initial card data.
     /// @param _socialKeys The social media keys to set.
     /// @param _socialValues The corresponding social media values.
-    function mintBaseCard(CardData memory _initialCardData, string[] memory _socialKeys, string[] memory _socialValues)
-        external;
+    /// @param _initialDelegates Addresses to grant delegate access to.
+    function mintBaseCard(
+        CardData memory _initialCardData,
+        string[] memory _socialKeys,
+        string[] memory _socialValues,
+        address[] memory _initialDelegates
+    ) external;
 
     // =============================================================
     //                      Update Functions
@@ -117,4 +122,32 @@ interface IBaseCard {
     /// @param _owner The owner address.
     /// @return The token ID (0 if not minted).
     function tokenIdOf(address _owner) external view returns (uint256);
+
+    // =============================================================
+    //                    Delegate Functions
+    // =============================================================
+
+    /// @notice Grants delegate access to another address for the specified token.
+    /// @dev Only callable by the token owner.
+    /// @param _tokenId The ID of the token.
+    /// @param _delegate The address to grant delegate access.
+    function grantTokenDelegate(uint256 _tokenId, address _delegate) external;
+
+    /// @notice Revokes delegate access from an address.
+    /// @dev Only callable by the token owner.
+    /// @param _tokenId The ID of the token.
+    /// @param _delegate The address to revoke delegate access from.
+    function revokeTokenDelegate(uint256 _tokenId, address _delegate) external;
+
+    /// @notice Checks if an address is the owner or a delegate for the token.
+    /// @param _tokenId The ID of the token.
+    /// @param _account The address to check.
+    /// @return True if the account is owner or delegate.
+    function isTokenOperator(uint256 _tokenId, address _account) external view returns (bool);
+
+    /// @notice Checks if an address is a delegate for the token.
+    /// @param _tokenId The ID of the token.
+    /// @param _delegate The address to check.
+    /// @return True if the address is a delegate.
+    function isTokenDelegate(uint256 _tokenId, address _delegate) external view returns (bool);
 }
